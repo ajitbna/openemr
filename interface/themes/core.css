@@ -204,3 +204,41 @@ div.closeDlgIframe:before {
     top: 0;
     height: 100%;
 }
+
+/*
+ * Layout-Based Forms (LBF) / generate_form_field radio & checkbox options.
+ *
+ * Bootstrap .form-control sets display:block; width:100%; height:… which, when
+ * applied to <input type="radio|checkbox"> next to bare option text, makes the
+ * control fill its table cell and overlap the label (e.g. Employment Status on
+ * lt_nutrition_screening_assessment).  Keep controls inline-sized even if an
+ * older template still attaches .form-control, and prefer the labeled markup
+ * emitted by library/options.inc.php.
+ */
+input[type="radio"].form-control,
+input[type="checkbox"].form-control {
+    display: inline-block;
+    width: auto;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 0.35em 0 0;
+    vertical-align: middle;
+    box-shadow: none;
+}
+
+label.lbf-radio-option,
+label.lbf-checkbox-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+label.lbf-radio-option input[type="radio"],
+label.lbf-checkbox-option input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0;
+}
