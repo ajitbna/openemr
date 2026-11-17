@@ -214,6 +214,15 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
  border-color: #999999;
 }
 
+<?php if ($formname === 'lt_prescribed_feeding_regime') { ?>
+/* Same scoped override as LBF/new.php: no grey row separators on this form. */
+body.lbf-form-lt_prescribed_feeding_regime tr.RS,
+body.lbf-form-lt_prescribed_feeding_regime td.RS {
+ border: none !important;
+ border-width: 0 !important;
+}
+<?php } ?>
+
 .ftitletable {
  width: 100%;
  margin: 0 0 8pt 0;
@@ -242,7 +251,10 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
 
 <?php if (!$PDF_OUTPUT) { ?>
 </head>
-<body bgcolor='#ffffff'>
+<?php
+$lbf_body_class = 'lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+?>
+<body bgcolor='#ffffff' class="<?php echo attr($lbf_body_class); ?>">
 <?php } ?>
 
 <form>

@@ -357,6 +357,18 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             border-color: #999999;
         }
 
+        /*
+         * Prescribed Feeding Regime (lt_prescribed_feeding_regime): layout rows use
+         * edit option RS ("Add Bottom Border Row"), which draws a thin grey line
+         * between each Add More / stacked record. Match Preoperative Anaesthetic
+         * Assessment Vital Signs by suppressing those separators for this form only.
+         */
+        body.lbf-form-lt_prescribed_feeding_regime tr.RS,
+        body.lbf-form-lt_prescribed_feeding_regime td.RS {
+            border: none !important;
+            border-width: 0 !important;
+        }
+
     </style>
 
     <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
@@ -724,7 +736,14 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
     </script>
 </head>
 
-<body class="body_top"<?php if ($from_issue_form) {
+<?php
+// Form-specific body class so CSS can target one LBF without affecting others.
+$lbf_body_class = 'body_top';
+if ($formname !== '') {
+    $lbf_body_class .= ' lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+}
+?>
+<body class="<?php echo attr($lbf_body_class); ?>"<?php if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
 } ?>>
 <div class='container'>
