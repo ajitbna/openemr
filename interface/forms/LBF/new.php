@@ -80,6 +80,11 @@ $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
+// Prescribed Feeding Regime: suppress RS/RO/DS/DO row separators so stacked /
+// "Add More" records match Preoperative Anaesthetic Assessment Vital Signs.
+// Match by substring so LBF-prefixed or shortened form ids still qualify.
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false);
+
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
 // If necessary get the encounter from the forms table entry for this form.
@@ -358,15 +363,42 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         /*
-         * Prescribed Feeding Regime (lt_prescribed_feeding_regime): layout rows use
-         * edit option RS ("Add Bottom Border Row"), which draws a thin grey line
-         * between each Add More / stacked record. Match Preoperative Anaesthetic
-         * Assessment Vital Signs by suppressing those separators for this form only.
+         * Prescribed Feeding Regime — kill horizontal row separators.
+         *
+         * First PR #3 fix only targeted body.lbf-form-lt_prescribed_feeding_regime
+         * + .RS. That missed live UI when: (a) formname differed slightly,
+         * (b) borders came from RO/DS/Bootstrap .table, or (c) theme CSS beat
+         * the selector. Target the form via data-attribute / action URL and
+         * zero every common horizontal border source inside .lbfdata.
          */
-        body.lbf-form-lt_prescribed_feeding_regime tr.RS,
-        body.lbf-form-lt_prescribed_feeding_regime td.RS {
-            border: none !important;
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata tr,
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata td,
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] tr.RS,
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] td.RS,
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] tr.RO,
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] td.RO,
+        form[action*="prescribed_feeding"] .lbfdata tr,
+        form[action*="prescribed_feeding"] .lbfdata td,
+        form[action*="prescribed_feeding"] tr.RS,
+        form[action*="prescribed_feeding"] td.RS,
+        form[action*="prescribed_feeding"] tr.RO,
+        form[action*="prescribed_feeding"] td.RO,
+        body[class*="prescribed_feeding"] .lbfdata tr,
+        body[class*="prescribed_feeding"] .lbfdata td,
+        body[class*="prescribed_feeding"] tr.RS,
+        body[class*="prescribed_feeding"] td.RS,
+        body[class*="prescribed_feeding"] tr.RO,
+        body[class*="prescribed_feeding"] td.RO {
+            border-top: none !important;
+            border-bottom: none !important;
             border-width: 0 !important;
+            box-shadow: none !important;
+        }
+
+        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata .table > tbody > tr > td,
+        form[action*="prescribed_feeding"] .table > tbody > tr > td,
+        body[class*="prescribed_feeding"] .table > tbody > tr > td {
+            border-top: none !important;
         }
 
     </style>
@@ -392,6 +424,23 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         $(document).ready(function () {
+
+            <?php if (!empty($lbf_suppress_row_borders)) { ?>
+            // Runtime strip: remove RS/RO classes and inline any leftover borders so
+            // theme CSS cannot reintroduce grey separators between feeding rows.
+            // Markup proof target: form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata tr
+            (function () {
+                var $scope = $('form.lbf-form[data-lbf-formname*="prescribed_feeding"], form[action*="prescribed_feeding"]');
+                $scope.find('.lbfdata tr, .lbfdata td, tr.RS, td.RS, tr.RO, td.RO')
+                    .removeClass('RS RO')
+                    .css({
+                        'border-top': 'none',
+                        'border-bottom': 'none',
+                        'border-width': '0',
+                        'box-shadow': 'none'
+                    });
+            })();
+            <?php } ?>
 
             if (window.tabbify) {
                 tabbify();
@@ -748,7 +797,7 @@ if ($formname !== '') {
 } ?>>
 <div class='container'>
     <?php
-    echo "<form method='post' " .
+    echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -1042,9 +1091,10 @@ if ($formname !== '') {
 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
                     end_row();
-                    if (isOption($edit_options, 'RS')) {
+                    // Skip RS/RO border classes when this form suppresses row separators.
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
                         echo " <tr class='RS'>";
-                    } else if (isOption($edit_options, 'RO')) {
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
                         echo " <tr class='RO'>";
                     } else {
                         echo " <tr>";
@@ -1115,10 +1165,9 @@ if ($formname !== '') {
 // Handle starting of a new data cell.
                 if ($datacols > 0) {
                     end_cell();
-                    if (isOption($edit_options, 'DS')) {
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'DS')) {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RS'";
-                    }
-                    if (isOption($edit_options, 'DO')) {
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'DO')) {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RO'";
                     } else {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text'";
