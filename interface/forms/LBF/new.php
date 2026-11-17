@@ -80,6 +80,12 @@ $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
+// Prescribed Feeding Regime: suppress per-row horizontal separators so stacked /
+// "Add More" records match Preoperative Anaesthetic Assessment Vital Signs.
+// Match by substring so LBF-prefixed or shortened form ids still qualify.
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
+    || (stripos($formname, 'feeding_regime') !== false);
+
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
 // If necessary get the encounter from the forms table entry for this form.
@@ -106,6 +112,11 @@ $formtitle = $lobj['grp_title'];
 $formhistory = 0 + $lobj['grp_repeats'];
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
+}
+// Also match by layout title (e.g. "Prescribed Feeding Regime").
+if (!$lbf_suppress_row_borders && !empty($formtitle)) {
+    $lbf_suppress_row_borders = (stripos($formtitle, 'Prescribed Feeding') !== false)
+        || (stripos($formtitle, 'Feeding Regime') !== false);
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -357,7 +368,85 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             border-color: #999999;
         }
 
+        /*
+         * NUCLEAR override — wins over Bootstrap:
+         *   .table > tbody > tr > td { border-top: 1px solid #ddd; }
+         * Injected whenever this LBF is Prescribed Feeding (PHP flag) OR always
+         * present as html[data-lbf-nuke-row-borders] / body class fallbacks.
+         */
+        <?php if (!empty($lbf_suppress_row_borders)) { ?>
+        html body form.lbf-form table,
+        html body form.lbf-form table.lbfdata,
+        html body form.lbf-form table.lbfdata-no-row-borders,
+        html body form.lbf-form table.table,
+        html body form.lbf-form .table,
+        html body form.lbf-form .table-responsive table,
+        html body .section table,
+        html body .section .table,
+        html body table.lbfdata,
+        html body table.lbfdata-no-row-borders,
+        html body table.lbfdata.table,
+        html body table.lbfdata-no-row-borders.table {
+            border-collapse: collapse !important;
+            border: 0 !important;
+        }
+        html body form.lbf-form table tr,
+        html body form.lbf-form table td,
+        html body form.lbf-form table th,
+        html body form.lbf-form .table > tbody > tr > td,
+        html body form.lbf-form .table > tbody > tr > th,
+        html body .section table tr,
+        html body .section table td,
+        html body .section table th,
+        html body .section .table > tbody > tr > td,
+        html body table.lbfdata tr,
+        html body table.lbfdata td,
+        html body table.lbfdata th,
+        html body table.lbfdata > tbody > tr > td,
+        html body table.lbfdata.table > tbody > tr > td,
+        html body table.lbfdata-no-row-borders tr,
+        html body table.lbfdata-no-row-borders td,
+        html body table.lbfdata-no-row-borders th,
+        html body table.lbfdata-no-row-borders > tbody > tr > td,
+        html body table.lbfdata-no-row-borders.table > tbody > tr > td,
+        html body tr.RS,
+        html body tr.RO,
+        html body td.RS,
+        html body td.RO {
+            border: 0 !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        <?php } ?>
+
     </style>
+    <?php if (!empty($lbf_suppress_row_borders)) { ?>
+    <!-- Nuclear row-border kill (also as last head style for load-order wins) -->
+    <style id="lbf-nuke-row-borders">
+        /* Exact Bootstrap override that must win:
+           Bootstrap 3: .table > tbody > tr > td { border-top: 1px solid #ddd; } */
+        .table > tbody > tr > td,
+        .table > tbody > tr > th,
+        table.table > tbody > tr > td,
+        table.lbfdata > tbody > tr > td,
+        table.lbfdata > tbody > tr > th,
+        table.lbfdata-no-row-borders > tbody > tr > td,
+        table.lbfdata-no-row-borders > tbody > tr > th,
+        form.lbf-form table > tbody > tr > td,
+        form.lbf-form table > tbody > tr > th,
+        form.lbf-form .table > tbody > tr > td,
+        .section table > tbody > tr > td,
+        .table-bordered > tbody > tr > td {
+            border: 0 !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+        }
+    </style>
+    <?php } ?>
 
     <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
 
@@ -380,6 +469,119 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         $(document).ready(function () {
+
+            // NUCLEAR: kill Bootstrap border-top:1px solid #ddd on LBF data rows.
+            // Runs when PHP flagged this form OR when page looks like Feeding Regime
+            // (Route+Volume) so formname mismatches still get fixed once deployed.
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_suppress_row_borders) ? 'true' : 'false'; ?>;
+                function looksLikeFeedingRegime() {
+                    if (phpFlag) { return true; }
+                    var href = String(window.location.href || '');
+                    if (/prescribed_feeding|feeding_regime/i.test(href)) { return true; }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    var hasRoute = /Route/i.test(txt);
+                    var hasVolume = /Volume/i.test(txt);
+                    var hasEnergy = /Energy/i.test(txt);
+                    var hasProtein = /Protein/i.test(txt);
+                    return hasRoute && hasVolume && (hasEnergy || hasProtein);
+                }
+                function nukeEl(el) {
+                    if (!el || el.nodeType !== 1) { return; }
+                    el.removeAttribute('border');
+                    if (el.classList) {
+                        el.classList.remove('RS', 'RO');
+                    }
+                    try {
+                        el.style.setProperty('border', '0', 'important');
+                        el.style.setProperty('border-top', '0', 'important');
+                        el.style.setProperty('border-bottom', '0', 'important');
+                        el.style.setProperty('box-shadow', 'none', 'important');
+                    } catch (e) {
+                        el.style.borderTop = '0';
+                        el.style.borderBottom = '0';
+                    }
+                }
+                function ensureNukeCss() {
+                    if (document.getElementById('lbf-nuke-row-borders-js')) { return; }
+                    var s = document.createElement('style');
+                    s.id = 'lbf-nuke-row-borders-js';
+                    s.type = 'text/css';
+                    s.appendChild(document.createTextNode(
+                        '.table > tbody > tr > td,.table > tbody > tr > th,' +
+                        'table.lbfdata > tbody > tr > td,table.lbfdata > tbody > tr > th,' +
+                        'form.lbf-form table > tbody > tr > td,form.lbf-form table > tbody > tr > th,' +
+                        '.section table > tbody > tr > td,.section table > tbody > tr > th{' +
+                        'border:0!important;border-top:0!important;border-bottom:0!important;}'
+                    ));
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                function stripRowBorders(root) {
+                    if (!looksLikeFeedingRegime()) { return; }
+                    ensureNukeCss();
+                    var scope = root || document;
+                    var tables = [];
+                    if (scope.nodeType === 1 && /TABLE/i.test(scope.tagName || '')) {
+                        tables.push(scope);
+                    }
+                    var found = (scope.querySelectorAll)
+                        ? scope.querySelectorAll('form.lbf-form table, .section table, table.lbfdata, table.lbfdata-no-row-borders, table.table')
+                        : [];
+                    for (var i = 0; i < found.length; i++) { tables.push(found[i]); }
+                    for (var t = 0; t < tables.length; t++) {
+                        nukeEl(tables[t]);
+                        var cells = tables[t].querySelectorAll('tr, td, th');
+                        for (var c = 0; c < cells.length; c++) { nukeEl(cells[c]); }
+                    }
+                }
+                function afterClone(node) {
+                    stripRowBorders(node || document);
+                    // Explicit Add More clone pass: every new tr/td gets borderTop=0.
+                    var rows = document.querySelectorAll('form.lbf-form tr, .section table tr, table.lbfdata tr');
+                    for (var r = 0; r < rows.length; r++) {
+                        nukeEl(rows[r]);
+                        var tds = rows[r].cells || rows[r].querySelectorAll('td, th');
+                        for (var d = 0; d < tds.length; d++) { nukeEl(tds[d]); }
+                    }
+                }
+                stripRowBorders(document);
+                afterClone(document);
+                if (window.MutationObserver) {
+                    var mo = new MutationObserver(function (mutations) {
+                        for (var i = 0; i < mutations.length; i++) {
+                            var nodes = mutations[i].addedNodes;
+                            for (var j = 0; j < nodes.length; j++) {
+                                if (nodes[j].nodeType === 1) {
+                                    afterClone(nodes[j]);
+                                }
+                            }
+                        }
+                    });
+                    mo.observe(document.body, { childList: true, subtree: true });
+                }
+                $(document).on(
+                    'click',
+                    '.fa-plus-circle, .fa-plus, .add-more, .addmore, button, a, [onclick*="duplicate"], [onclick*="Duplicate"], [onclick*="Add"], [onclick*="add"]',
+                    function () {
+                        setTimeout(function () { afterClone(document); }, 0);
+                        setTimeout(function () { afterClone(document); }, 50);
+                        setTimeout(function () { afterClone(document); }, 200);
+                    }
+                );
+                // Patch duplicateRow if a page script defines it later.
+                var _origDup = window.duplicateRow;
+                Object.defineProperty(window, 'duplicateRow', {
+                    configurable: true,
+                    set: function (fn) {
+                        _origDup = function () {
+                            var ret = fn.apply(this, arguments);
+                            setTimeout(function () { afterClone(document); }, 0);
+                            return ret;
+                        };
+                    },
+                    get: function () { return _origDup; }
+                });
+            })();
 
             if (window.tabbify) {
                 tabbify();
@@ -724,12 +926,28 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
     </script>
 </head>
 
-<body class="body_top"<?php if ($from_issue_form) {
+<?php
+// Form-specific body class so CSS can target one LBF without affecting others.
+$lbf_body_class = 'body_top';
+if ($formname !== '') {
+    $lbf_body_class .= ' lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+}
+if (!empty($lbf_suppress_row_borders)) {
+    $lbf_body_class .= ' lbf-no-row-borders';
+}
+?>
+<body class="<?php echo attr($lbf_body_class); ?>"<?php
+if (!empty($lbf_suppress_row_borders)) {
+    echo " data-lbf-nuke-row-borders='1'";
+}
+if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
-} ?>>
+}
+?>>
 <div class='container'>
     <?php
-    echo "<form method='post' " .
+    echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
+        (!empty($lbf_suppress_row_borders) ? "data-lbf-nuke-row-borders='1' " : "") .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -975,12 +1193,22 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
 
                     $group_table_active = true;
-                    echo " <table border='0' cellspacing='0' cellpadding='0' class='lbfdata'>\n";
+                    // lbfdata-no-row-borders → CSS kills Bootstrap td border-top (#ddd).
+                    $lbf_table_class = 'lbfdata';
+                    $lbf_table_style = '';
+                    if (!empty($lbf_suppress_row_borders)) {
+                        $lbf_table_class .= ' lbfdata-no-row-borders';
+                        $lbf_table_style = " style='border:0!important;border-collapse:collapse!important;'";
+                    }
+                    echo " <table border='0' cellspacing='0' cellpadding='0' class='" . attr($lbf_table_class) . "'" . $lbf_table_style . ">\n";
 
                     if ($subtitle) {
                         // There is a group subtitle so show it.
-                        echo "<tr><td class='bold' style='color:#0000ff' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
-                        echo "<tr><td class='bold' style='height:4pt' colspan='" . attr($CPR) . "'></td></tr>\n";
+                        $sub_border = !empty($lbf_suppress_row_borders)
+                            ? "border:0!important;border-top:0!important;border-bottom:0!important;"
+                            : '';
+                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold' style='color:#0000ff;" . $sub_border . "' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
+                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold' style='height:4pt;" . $sub_border . "' colspan='" . attr($CPR) . "'></td></tr>\n";
                     }
 
                     $display_style = 'none';
@@ -1020,13 +1248,21 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
                 }
 
+// Inline style that beats Bootstrap border-top:1px solid #ddd when suppressing.
+                $lbf_cell_border_style = !empty($lbf_suppress_row_borders)
+                    ? "border:0!important;border-top:0!important;border-bottom:0!important;"
+                    : '';
+
 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
                     end_row();
-                    if (isOption($edit_options, 'RS')) {
+                    // Skip RS/RO border classes when this form suppresses row separators.
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
                         echo " <tr class='RS'>";
-                    } else if (isOption($edit_options, 'RO')) {
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
                         echo " <tr class='RO'>";
+                    } else if (!empty($lbf_suppress_row_borders)) {
+                        echo " <tr style='" . $lbf_cell_border_style . "'>";
                     } else {
                         echo " <tr>";
                     }
@@ -1062,15 +1298,22 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
                     echo "'";
 
+                    // Nuclear: always stamp border-top:0 inline on every cell for this form.
+                    $label_style = $lbf_cell_border_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:10pt'";
+                        $label_style .= "padding-left:10pt;";
+                    }
+                    if ($label_style !== '') {
+                        echo " style='" . $label_style . "'";
                     }
                     // This ID is used by action conditions and also show_graph().
                     echo " id='label_id_" . attr($field_id) . "'";
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' colspan='" . attr($titlecols) . "' class='text' nowrap>";
+                        $historical_ids[$key] .= "<td valign='top' colspan='" . attr($titlecols) . "' class='text' nowrap"
+                            . (!empty($lbf_suppress_row_borders) ? " style='" . $lbf_cell_border_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $titlecols;
@@ -1096,24 +1339,29 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 // Handle starting of a new data cell.
                 if ($datacols > 0) {
                     end_cell();
-                    if (isOption($edit_options, 'DS')) {
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'DS')) {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RS'";
-                    }
-                    if (isOption($edit_options, 'DO')) {
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'DO')) {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RO'";
                     } else {
                         echo "<td valign='top' colspan='" . attr($datacols) . "' class='text'";
                     }
                     // This ID is used by action conditions.
                     echo " id='value_id_" . attr($field_id) . "'";
+                    $value_style = $lbf_cell_border_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:5pt'";
+                        $value_style .= "padding-left:5pt;";
+                    }
+                    if ($value_style !== '') {
+                        echo " style='" . $value_style . "'";
                     }
 
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' align='right' colspan='" . attr($datacols) . "' class='text'>";
+                        $historical_ids[$key] .= "<td valign='top' align='right' colspan='" . attr($datacols) . "' class='text'"
+                            . (!empty($lbf_suppress_row_borders) ? " style='" . $lbf_cell_border_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $datacols;

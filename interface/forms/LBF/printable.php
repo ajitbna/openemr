@@ -17,6 +17,7 @@ $FONTSIZE = 9;
 
 // The form name is passed to us as a GET parameter.
 $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false);
 
 $patientid = empty($_REQUEST['patientid']) ? 0 : (0 + $_REQUEST['patientid']);
 if ($patientid < 0) {
@@ -214,6 +215,20 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
  border-color: #999999;
 }
 
+<?php if ($lbf_suppress_row_borders) { ?>
+/* Prescribed Feeding Regime: no grey row separators (print). */
+body[class*="prescribed_feeding"] tr.RS,
+body[class*="prescribed_feeding"] td.RS,
+body[class*="prescribed_feeding"] tr.RO,
+body[class*="prescribed_feeding"] td.RO,
+body[class*="prescribed_feeding"] table tr,
+body[class*="prescribed_feeding"] table td {
+ border-top: none !important;
+ border-bottom: none !important;
+ border-width: 0 !important;
+}
+<?php } ?>
+
 .ftitletable {
  width: 100%;
  margin: 0 0 8pt 0;
@@ -242,7 +257,10 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
 
 <?php if (!$PDF_OUTPUT) { ?>
 </head>
-<body bgcolor='#ffffff'>
+<?php
+$lbf_body_class = 'lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+?>
+<body bgcolor='#ffffff' class="<?php echo attr($lbf_body_class); ?>">
 <?php } ?>
 
 <form>
@@ -414,9 +432,9 @@ while ($frow = sqlFetchArray($fres)) {
     if (($cell_count + $titlecols + $datacols) > $CPR || $cell_count == 0) {
         end_row();
         // echo "  <tr style='height:30pt'>";
-        if (isOption($edit_options, 'RS')) {
+        if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
             echo " <tr class='RS'>";
-        } else if (isOption($edit_options, 'RO')) {
+        } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
             echo " <tr class='RO'>";
         } else {
             echo " <tr>";
@@ -458,9 +476,9 @@ while ($frow = sqlFetchArray($fres)) {
     // Handle starting of a new data cell.
     if ($datacols > 0) {
         end_cell();
-        if (isOption($edit_options, 'DS')) {
+        if (!$lbf_suppress_row_borders && isOption($edit_options, 'DS')) {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RS' style='";
-        } else if (isOption($edit_options, 'DO')) {
+        } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'DO')) {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RO' style='";
         } else {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under' style='";
