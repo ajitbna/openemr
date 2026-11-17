@@ -80,10 +80,11 @@ $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
-// Prescribed Feeding Regime: suppress RS/RO/DS/DO row separators so stacked /
+// Prescribed Feeding Regime: suppress per-row horizontal separators so stacked /
 // "Add More" records match Preoperative Anaesthetic Assessment Vital Signs.
 // Match by substring so LBF-prefixed or shortened form ids still qualify.
-$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false);
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
+    || (stripos($formname, 'feeding_regime') !== false);
 
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
@@ -111,6 +112,11 @@ $formtitle = $lobj['grp_title'];
 $formhistory = 0 + $lobj['grp_repeats'];
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
+}
+// Also match by layout title (e.g. "Prescribed Feeding Regime").
+if (!$lbf_suppress_row_borders && !empty($formtitle)) {
+    $lbf_suppress_row_borders = (stripos($formtitle, 'Prescribed Feeding') !== false)
+        || (stripos($formtitle, 'Feeding Regime') !== false);
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -363,42 +369,38 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         /*
-         * Prescribed Feeding Regime — kill horizontal row separators.
+         * EXACT property removed for Prescribed Feeding Regime data rows:
          *
-         * First PR #3 fix only targeted body.lbf-form-lt_prescribed_feeding_regime
-         * + .RS. That missed live UI when: (a) formname differed slightly,
-         * (b) borders came from RO/DS/Bootstrap .table, or (c) theme CSS beat
-         * the selector. Target the form via data-attribute / action URL and
-         * zero every common horizontal border source inside .lbfdata.
+         *   Bootstrap 3 (bootstrap.css):
+         *     .table > tbody > tr > td { border-top: 1px solid #ddd; }
+         *
+         * That light-grey (#ddd) border-top on each <td> is the line BETWEEN
+         * row 1 and row 2 (and every subsequent Add More row). RS uses a darker
+         * #999 bottom border; the screenshot's light grey top line is Bootstrap.
+         *
+         * Strategy: stamp class lbfdata-no-row-borders on the table in PHP, then
+         * kill border-top with !important so theme/Bootstrap cannot win. Applies
+         * to rows cloned by Add More JS because CSS matches by class, not by
+         * one-time JS. MutationObserver also re-applies inline styles on clones.
          */
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata tr,
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata td,
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] tr.RS,
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] td.RS,
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] tr.RO,
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] td.RO,
-        form[action*="prescribed_feeding"] .lbfdata tr,
-        form[action*="prescribed_feeding"] .lbfdata td,
-        form[action*="prescribed_feeding"] tr.RS,
-        form[action*="prescribed_feeding"] td.RS,
-        form[action*="prescribed_feeding"] tr.RO,
-        form[action*="prescribed_feeding"] td.RO,
-        body[class*="prescribed_feeding"] .lbfdata tr,
-        body[class*="prescribed_feeding"] .lbfdata td,
-        body[class*="prescribed_feeding"] tr.RS,
-        body[class*="prescribed_feeding"] td.RS,
-        body[class*="prescribed_feeding"] tr.RO,
-        body[class*="prescribed_feeding"] td.RO {
-            border-top: none !important;
-            border-bottom: none !important;
-            border-width: 0 !important;
+        table.lbfdata-no-row-borders,
+        table.lbfdata-no-row-borders > tbody > tr,
+        table.lbfdata-no-row-borders > tbody > tr > td,
+        table.lbfdata-no-row-borders > tbody > tr > th,
+        table.lbfdata-no-row-borders.table > tbody > tr > td,
+        table.lbfdata-no-row-borders.table > tbody > tr > th,
+        table.table.lbfdata-no-row-borders > tbody > tr > td,
+        .table-responsive > table.lbfdata-no-row-borders > tbody > tr > td,
+        .table-bordered.lbfdata-no-row-borders > tbody > tr > td,
+        table.lbfdata-no-row-borders tr.RS,
+        table.lbfdata-no-row-borders tr.RO,
+        table.lbfdata-no-row-borders td.RS,
+        table.lbfdata-no-row-borders td.RO {
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
             box-shadow: none !important;
-        }
-
-        form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata .table > tbody > tr > td,
-        form[action*="prescribed_feeding"] .table > tbody > tr > td,
-        body[class*="prescribed_feeding"] .table > tbody > tr > td {
-            border-top: none !important;
         }
 
     </style>
@@ -426,19 +428,40 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         $(document).ready(function () {
 
             <?php if (!empty($lbf_suppress_row_borders)) { ?>
-            // Runtime strip: remove RS/RO classes and inline any leftover borders so
-            // theme CSS cannot reintroduce grey separators between feeding rows.
-            // Markup proof target: form.lbf-form[data-lbf-formname*="prescribed_feeding"] .lbfdata tr
+            // Kill Bootstrap border-top: 1px solid #ddd on every data cell, including
+            // rows cloned later by Add More JS (MutationObserver).
+            // Selector: table.lbfdata-no-row-borders > tbody > tr > td
             (function () {
-                var $scope = $('form.lbf-form[data-lbf-formname*="prescribed_feeding"], form[action*="prescribed_feeding"]');
-                $scope.find('.lbfdata tr, .lbfdata td, tr.RS, td.RS, tr.RO, td.RO')
-                    .removeClass('RS RO')
-                    .css({
-                        'border-top': 'none',
-                        'border-bottom': 'none',
-                        'border-width': '0',
-                        'box-shadow': 'none'
+                function stripRowBorders(root) {
+                    var $root = root ? $(root) : $(document);
+                    $root.find('table.lbfdata-no-row-borders').addBack('table.lbfdata-no-row-borders')
+                        .find('tr, td, th')
+                        .addBack('tr, td, th')
+                        .removeClass('RS RO')
+                        .each(function () {
+                            this.style.setProperty('border-top', '0', 'important');
+                            this.style.setProperty('border-bottom', '0', 'important');
+                            this.style.setProperty('box-shadow', 'none', 'important');
+                        });
+                }
+                stripRowBorders(document);
+                if (window.MutationObserver) {
+                    var mo = new MutationObserver(function (mutations) {
+                        for (var i = 0; i < mutations.length; i++) {
+                            var nodes = mutations[i].addedNodes;
+                            for (var j = 0; j < nodes.length; j++) {
+                                if (nodes[j].nodeType === 1) {
+                                    stripRowBorders(nodes[j]);
+                                }
+                            }
+                        }
                     });
+                    mo.observe(document.body, { childList: true, subtree: true });
+                }
+                // Hook common Add More / duplicate helpers if present.
+                $(document).on('click', '.fa-plus-circle, .add-more, [onclick*="duplicate"], [onclick*="Add"]', function () {
+                    setTimeout(function () { stripRowBorders(document); }, 0);
+                });
             })();
             <?php } ?>
 
@@ -1043,7 +1066,12 @@ if ($formname !== '') {
                     }
 
                     $group_table_active = true;
-                    echo " <table border='0' cellspacing='0' cellpadding='0' class='lbfdata'>\n";
+                    // lbfdata-no-row-borders → CSS kills Bootstrap td border-top (#ddd).
+                    $lbf_table_class = 'lbfdata';
+                    if (!empty($lbf_suppress_row_borders)) {
+                        $lbf_table_class .= ' lbfdata-no-row-borders';
+                    }
+                    echo " <table border='0' cellspacing='0' cellpadding='0' class='" . attr($lbf_table_class) . "'>\n";
 
                     if ($subtitle) {
                         // There is a group subtitle so show it.

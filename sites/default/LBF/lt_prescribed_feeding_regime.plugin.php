@@ -17,21 +17,20 @@
  */
 function lt_prescribed_feeding_regime_javascript()
 {
+    // Exact Bootstrap rule being overridden:
+    //   .table > tbody > tr > td { border-top: 1px solid #ddd; }
     echo "
-// Inject CSS that clears row separators even if page CSS order is unusual.
 (function () {
   if (document.getElementById('lt-pfr-no-row-borders')) { return; }
   var s = document.createElement('style');
   s.id = 'lt-pfr-no-row-borders';
   s.type = 'text/css';
   s.appendChild(document.createTextNode(
-    'form.lbf-form[data-lbf-formname*=\"prescribed_feeding\"] .lbfdata tr,' +
-    'form.lbf-form[data-lbf-formname*=\"prescribed_feeding\"] .lbfdata td,' +
-    'form[action*=\"prescribed_feeding\"] .lbfdata tr,' +
-    'form[action*=\"prescribed_feeding\"] .lbfdata td,' +
-    'tr.RS, td.RS, tr.RO, td.RO {' +
-    '  border-top:none!important;border-bottom:none!important;' +
-    '  border-width:0!important;box-shadow:none!important;' +
+    'table.lbfdata-no-row-borders > tbody > tr > td,' +
+    'table.lbfdata-no-row-borders.table > tbody > tr > td,' +
+    'table.table.lbfdata-no-row-borders > tbody > tr > td {' +
+    '  border-top: 0 !important;' +
+    '  border-bottom: 0 !important;' +
     '}'
   ));
   (document.head || document.getElementsByTagName('head')[0]).appendChild(s);
@@ -40,15 +39,14 @@ function lt_prescribed_feeding_regime_javascript()
 }
 
 /**
- * Onload: strip border classes from rendered rows.
+ * Onload: strip border-top from data cells (and any Add More clones already present).
  */
 function lt_prescribed_feeding_regime_javascript_onload()
 {
     echo "
-$('form.lbf-form .lbfdata tr, form.lbf-form .lbfdata td').removeClass('RS RO').css({
-  'border-top': 'none',
-  'border-bottom': 'none',
-  'border-width': '0'
+$('table.lbfdata-no-row-borders td, table.lbfdata-no-row-borders th').each(function () {
+  this.style.setProperty('border-top', '0', 'important');
+  this.style.setProperty('border-bottom', '0', 'important');
 });
 ";
 }
