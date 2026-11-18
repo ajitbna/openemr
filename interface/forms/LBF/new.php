@@ -80,6 +80,11 @@ $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
+// Meal Satisfaction Questionnaire: vertically center label + value cells in each
+// row so multi-line questions align with radios / selects / text inputs.
+// Match by substring so LBF-prefixed or shortened form ids still qualify.
+$lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false);
+
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
 // If necessary get the encounter from the forms table entry for this form.
@@ -106,6 +111,10 @@ $formtitle = $lobj['grp_title'];
 $formhistory = 0 + $lobj['grp_repeats'];
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
+}
+// Also match by layout title (e.g. "Meal Satisfaction Questionnaire").
+if (!$lbf_vcenter_fields && !empty($formtitle)) {
+    $lbf_vcenter_fields = (stripos($formtitle, 'Meal Satisfaction') !== false);
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -356,6 +365,32 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             border-width: 1px 1px 1px 1px !important;
             border-color: #999999;
         }
+
+        <?php if (!empty($lbf_vcenter_fields)) { ?>
+        /*
+         * Meal Satisfaction Questionnaire only:
+         * LBF emits valign="top" on label/value <td>s, so multi-line question
+         * text leaves radios/selects/inputs stuck at the top. Override to
+         * vertical-align: middle so controls sit centered with the label.
+         */
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata > tbody > tr > td,
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata td,
+        body.lbf-vcenter-fields table.lbfdata > tbody > tr > td,
+        body.lbf-vcenter-fields table.lbfdata td {
+            vertical-align: middle !important;
+        }
+        /* When a value cell wraps radio/checkbox groups, flex-center them too. */
+        body.lbf-vcenter-fields table.lbfdata td.text {
+            align-items: center;
+        }
+        body.lbf-vcenter-fields table.lbfdata td.text > span,
+        body.lbf-vcenter-fields table.lbfdata td.text > div {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            vertical-align: middle;
+        }
+        <?php } ?>
 
     </style>
 
@@ -724,12 +759,22 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
     </script>
 </head>
 
-<body class="body_top"<?php if ($from_issue_form) {
+<?php
+// Form-specific body class so CSS can target one LBF without affecting others.
+$lbf_body_class = 'body_top';
+if ($formname !== '') {
+    $lbf_body_class .= ' lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+}
+if (!empty($lbf_vcenter_fields)) {
+    $lbf_body_class .= ' lbf-vcenter-fields';
+}
+?>
+<body class="<?php echo attr($lbf_body_class); ?>"<?php if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
 } ?>>
 <div class='container'>
     <?php
-    echo "<form method='post' " .
+    echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -1044,15 +1089,19 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 // First item is on the "left-border"
                 $leftborder = true;
 
+                // Default LBF uses valign=top; Meal Satisfaction uses middle so
+                // multi-line labels sit centered with radios / selects / inputs.
+                $lbf_td_valign = !empty($lbf_vcenter_fields) ? 'middle' : 'top';
+
 // Handle starting of a new label cell.
                 if ($titlecols > 0) {
                     end_cell();
                     if (isOption($edit_options, 'SP')) {
                         $datacols = 0;
                         $titlecols = $CPR;
-                        echo "<td valign='top' colspan='" . attr($titlecols) . "'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "'";
                     } else {
-                        echo "<td valign='top' colspan='" . attr($titlecols) . "' nowrap";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' nowrap";
                     }
                     echo " class='";
                     echo ($frow['uor'] == 2) ? "required" : "bold";
@@ -1070,7 +1119,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' colspan='" . attr($titlecols) . "' class='text' nowrap>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' class='text' nowrap>";
                     }
 
                     $cell_count += $titlecols;
@@ -1097,12 +1146,12 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 if ($datacols > 0) {
                     end_cell();
                     if (isOption($edit_options, 'DS')) {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RS'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RS'";
                     }
                     if (isOption($edit_options, 'DO')) {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RO'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RO'";
                     } else {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text'";
                     }
                     // This ID is used by action conditions.
                     echo " id='value_id_" . attr($field_id) . "'";
@@ -1113,7 +1162,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' align='right' colspan='" . attr($datacols) . "' class='text'>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' align='right' colspan='" . attr($datacols) . "' class='text'>";
                     }
 
                     $cell_count += $datacols;
