@@ -357,6 +357,27 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             border-color: #999999;
         }
 
+        /*
+         * LBF title row is wrapped in Bootstrap .col-xs-12 (15px left padding),
+         * while group fields ("Nutritional History", checkboxes, etc.) are direct
+         * children of .row with no column gutter. Zero the title column padding
+         * so the blue page-header / form title aligns with the white-card content.
+         */
+        .lbf-page-header-col {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .lbf-page-header-col > .page-header {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .lbf-page-header-col > .page-header > h3 {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+
     </style>
 
     <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
@@ -747,7 +768,11 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
     <div class="container-responsive">
         <div class="row">
-            <div class="col-xs-12">
+            <!--
+              lbf-page-header-col: no Bootstrap column gutter so the title /
+              page-header left edge matches group fields (not indented).
+            -->
+            <div class="col-xs-12 lbf-page-header-col">
                 <div class="page-header">
                     <h3>
                         <?php echo text($formtitle) . " " . xlt('for') . ' ';
