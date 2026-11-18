@@ -81,9 +81,11 @@ $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
 // Meal Satisfaction Questionnaire: vertically center label + value cells in each
-// row so multi-line questions align with radios / selects / text inputs.
-// Match by substring so LBF-prefixed or shortened form ids still qualify.
-$lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false);
+// row so multi-line questions align with radios / selects / text inputs / textareas.
+// Broad substring match so LBF-prefixed or slightly different form ids still qualify.
+$lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false)
+    || (stripos($formname, 'meal_sat') !== false)
+    || (bool) preg_match('/meal.*satisfac|satisfac.*meal/i', (string) $formname);
 
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
@@ -112,9 +114,23 @@ $formhistory = 0 + $lobj['grp_repeats'];
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
 }
-// Also match by layout title (e.g. "Meal Satisfaction Questionnaire").
+// Also match by layout / group title (e.g. "Meal Satisfaction Questionnaire",
+// "PATIENT MEAL SATISFACTION").
 if (!$lbf_vcenter_fields && !empty($formtitle)) {
-    $lbf_vcenter_fields = (stripos($formtitle, 'Meal Satisfaction') !== false);
+    $lbf_vcenter_fields = (stripos($formtitle, 'Meal Satisfaction') !== false)
+        || (stripos($formtitle, 'MEAL SATISFACTION') !== false)
+        || (bool) preg_match('/meal\s*satisfac/i', (string) $formtitle);
+}
+if (!$lbf_vcenter_fields && is_array($grparr)) {
+    foreach ($grparr as $gprop) {
+        if (empty($gprop['grp_title'])) {
+            continue;
+        }
+        if (preg_match('/meal\s*satisfac/i', (string) $gprop['grp_title'])) {
+            $lbf_vcenter_fields = true;
+            break;
+        }
+    }
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -368,31 +384,87 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         <?php if (!empty($lbf_vcenter_fields)) { ?>
         /*
-         * Meal Satisfaction Questionnaire only:
-         * LBF emits valign="top" on label/value <td>s, so multi-line question
-         * text leaves radios/selects/inputs stuck at the top. Override to
-         * vertical-align: middle so controls sit centered with the label.
+         * NUCLEAR — Meal Satisfaction / PATIENT MEAL SATISFACTION only.
+         * Beats Bootstrap `.table td { vertical-align: top }` and LBF valign=top.
+         * Flex each data row so short controls (radio/select/input/textarea)
+         * sit vertically centered next to multi-line labels.
          */
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata,
+        body.lbf-vcenter-fields table.lbfdata,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata,
+        form.lbf-form[data-lbf-formname*='meal_satisfaction'] table.lbfdata,
+        form.lbf-form[data-lbf-formname*='meal_sat'] table.lbfdata {
+            border-collapse: separate !important;
+        }
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata > tbody > tr,
+        body.lbf-vcenter-fields table.lbfdata > tbody > tr,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr,
+        form.lbf-form[data-lbf-formname*='meal_satisfaction'] table.lbfdata > tbody > tr {
+            display: flex !important;
+            align-items: center !important;
+            width: 100%;
+        }
         body.lbf-vcenter-fields form.lbf-form table.lbfdata > tbody > tr > td,
         body.lbf-vcenter-fields form.lbf-form table.lbfdata td,
         body.lbf-vcenter-fields table.lbfdata > tbody > tr > td,
-        body.lbf-vcenter-fields table.lbfdata td {
+        body.lbf-vcenter-fields table.lbfdata td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr > td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td,
+        form.lbf-form[data-lbf-formname*='meal_satisfaction'] table.lbfdata td,
+        .table > tbody > tr > td.lbf-vcenter-cell {
             vertical-align: middle !important;
-        }
-        /* When a value cell wraps radio/checkbox groups, flex-center them too. */
-        body.lbf-vcenter-fields table.lbfdata td.text {
-            align-items: center;
-        }
-        body.lbf-vcenter-fields table.lbfdata td.text > span,
-        body.lbf-vcenter-fields table.lbfdata td.text > div {
-            display: inline-flex;
-            align-items: center;
+            display: flex !important;
+            align-items: center !important;
             flex-wrap: wrap;
-            vertical-align: middle;
+            float: none !important;
+        }
+        /* Nested radio tables (data_type 27) inside value cells */
+        body.lbf-vcenter-fields table.lbfdata td table,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table {
+            width: auto !important;
+            margin: 0 !important;
+        }
+        body.lbf-vcenter-fields table.lbfdata td table td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table td {
+            vertical-align: middle !important;
+            display: table-cell !important; /* keep nested radio layout */
+            align-items: unset;
+            flex-wrap: unset;
+        }
+        body.lbf-vcenter-fields table.lbfdata input,
+        body.lbf-vcenter-fields table.lbfdata select,
+        body.lbf-vcenter-fields table.lbfdata textarea,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata input,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata select,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata textarea {
+            vertical-align: middle !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
         }
         <?php } ?>
 
     </style>
+    <?php if (!empty($lbf_vcenter_fields)) { ?>
+    <!-- Last-in-head nuclear vcenter (wins theme load order) -->
+    <style id="lbf-nuke-vcenter">
+        .lbf-vcenter-fields table.lbfdata > tbody > tr,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr {
+            display: flex !important;
+            align-items: center !important;
+        }
+        .lbf-vcenter-fields table.lbfdata > tbody > tr > td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr > td {
+            vertical-align: middle !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .lbf-vcenter-fields table.lbfdata td table td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table td {
+            display: table-cell !important;
+            vertical-align: middle !important;
+        }
+    </style>
+    <?php } ?>
 
     <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
 
@@ -415,6 +487,80 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         $(document).ready(function () {
+
+            // NUCLEAR vcenter: Meal Satisfaction / PATIENT MEAL SATISFACTION.
+            // Runs when PHP flagged the form OR page content matches, so slight
+            // formname mismatches still center radios/selects/inputs/textareas.
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_vcenter_fields) ? 'true' : 'false'; ?>;
+                function looksLikeMealSatisfaction() {
+                    if (phpFlag) { return true; }
+                    var href = String(window.location.href || '');
+                    if (/meal_satisfaction|meal_sat|meal.*satisfac/i.test(href)) { return true; }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    if (/MEAL\s*SATISFACTION|Did you need assistance with eating|What portion of your meal/i.test(txt)) {
+                        return true;
+                    }
+                    return false;
+                }
+                function ensureCss() {
+                    if (document.getElementById('lbf-nuke-vcenter-js')) { return; }
+                    var s = document.createElement('style');
+                    s.id = 'lbf-nuke-vcenter-js';
+                    s.type = 'text/css';
+                    s.appendChild(document.createTextNode(
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata > tbody > tr,' +
+                        'body.lbf-vcenter-fields table.lbfdata > tbody > tr{' +
+                        'display:flex!important;align-items:center!important;}' +
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata > tbody > tr > td,' +
+                        'body.lbf-vcenter-fields table.lbfdata > tbody > tr > td{' +
+                        'vertical-align:middle!important;display:flex!important;align-items:center!important;flex-wrap:wrap;}' +
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata td table td,' +
+                        'body.lbf-vcenter-fields table.lbfdata td table td{' +
+                        'display:table-cell!important;vertical-align:middle!important;}'
+                    ));
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                function nukeVcenter() {
+                    if (!looksLikeMealSatisfaction()) { return; }
+                    ensureCss();
+                    if (document.body) {
+                        document.body.classList.add('lbf-vcenter-fields');
+                        document.body.setAttribute('data-lbf-vcenter', '1');
+                    }
+                    var forms = document.querySelectorAll('form.lbf-form, form');
+                    for (var f = 0; f < forms.length; f++) {
+                        forms[f].setAttribute('data-lbf-vcenter', '1');
+                        if (forms[f].classList) { forms[f].classList.add('lbf-form'); }
+                    }
+                    var rows = document.querySelectorAll('table.lbfdata > tbody > tr, table.lbfdata tr');
+                    for (var r = 0; r < rows.length; r++) {
+                        var tr = rows[r];
+                        tr.style.setProperty('display', 'flex', 'important');
+                        tr.style.setProperty('align-items', 'center', 'important');
+                        var cells = tr.children;
+                        for (var c = 0; c < cells.length; c++) {
+                            var td = cells[c];
+                            if (!td || !/TD|TH/i.test(td.tagName || '')) { continue; }
+                            td.classList.add('lbf-vcenter-cell');
+                            td.setAttribute('valign', 'middle');
+                            td.style.setProperty('vertical-align', 'middle', 'important');
+                            td.style.setProperty('display', 'flex', 'important');
+                            td.style.setProperty('align-items', 'center', 'important');
+                            td.style.setProperty('flex-wrap', 'wrap', 'important');
+                            // Nested radio tables must stay table-layout.
+                            var nested = td.querySelectorAll('table td');
+                            for (var n = 0; n < nested.length; n++) {
+                                nested[n].style.setProperty('display', 'table-cell', 'important');
+                                nested[n].style.setProperty('vertical-align', 'middle', 'important');
+                            }
+                        }
+                    }
+                }
+                nukeVcenter();
+                setTimeout(nukeVcenter, 0);
+                setTimeout(nukeVcenter, 100);
+            })();
 
             if (window.tabbify) {
                 tabbify();
@@ -769,12 +915,18 @@ if (!empty($lbf_vcenter_fields)) {
     $lbf_body_class .= ' lbf-vcenter-fields';
 }
 ?>
-<body class="<?php echo attr($lbf_body_class); ?>"<?php if ($from_issue_form) {
+<body class="<?php echo attr($lbf_body_class); ?>"<?php
+if (!empty($lbf_vcenter_fields)) {
+    echo " data-lbf-vcenter='1'";
+}
+if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
-} ?>>
+}
+?>>
 <div class='container'>
     <?php
     echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
+        (!empty($lbf_vcenter_fields) ? "data-lbf-vcenter='1' " : "") .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -1090,8 +1242,12 @@ if (!empty($lbf_vcenter_fields)) {
                 $leftborder = true;
 
                 // Default LBF uses valign=top; Meal Satisfaction uses middle so
-                // multi-line labels sit centered with radios / selects / inputs.
+                // multi-line labels sit centered with radios / selects / inputs / textareas.
                 $lbf_td_valign = !empty($lbf_vcenter_fields) ? 'middle' : 'top';
+                $lbf_td_vcenter_style = !empty($lbf_vcenter_fields)
+                    ? "vertical-align:middle!important;display:flex;align-items:center;flex-wrap:wrap;"
+                    : '';
+                $lbf_td_vcenter_class = !empty($lbf_vcenter_fields) ? ' lbf-vcenter-cell' : '';
 
 // Handle starting of a new label cell.
                 if ($titlecols > 0) {
@@ -1108,18 +1264,25 @@ if (!empty($lbf_vcenter_fields)) {
                     if ($graphable) {
                         echo " graph";
                     }
+                    echo $lbf_td_vcenter_class;
 
                     echo "'";
 
+                    $label_style = $lbf_td_vcenter_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:10pt'";
+                        $label_style .= "padding-left:10pt;";
+                    }
+                    if ($label_style !== '') {
+                        echo " style='" . $label_style . "'";
                     }
                     // This ID is used by action conditions and also show_graph().
                     echo " id='label_id_" . attr($field_id) . "'";
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' class='text' nowrap>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' class='text" . $lbf_td_vcenter_class . "' nowrap"
+                            . ($lbf_td_vcenter_style !== '' ? " style='" . $lbf_td_vcenter_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $titlecols;
@@ -1146,23 +1309,29 @@ if (!empty($lbf_vcenter_fields)) {
                 if ($datacols > 0) {
                     end_cell();
                     if (isOption($edit_options, 'DS')) {
-                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RS'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RS" . $lbf_td_vcenter_class . "'";
                     }
                     if (isOption($edit_options, 'DO')) {
-                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RO'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RO" . $lbf_td_vcenter_class . "'";
                     } else {
-                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text" . $lbf_td_vcenter_class . "'";
                     }
                     // This ID is used by action conditions.
                     echo " id='value_id_" . attr($field_id) . "'";
+                    $value_style = $lbf_td_vcenter_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:5pt'";
+                        $value_style .= "padding-left:5pt;";
+                    }
+                    if ($value_style !== '') {
+                        echo " style='" . $value_style . "'";
                     }
 
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' align='right' colspan='" . attr($datacols) . "' class='text'>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' align='right' colspan='" . attr($datacols) . "' class='text" . $lbf_td_vcenter_class . "'"
+                            . ($lbf_td_vcenter_style !== '' ? " style='" . $lbf_td_vcenter_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $datacols;
