@@ -358,24 +358,56 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         /*
-         * LBF title row is wrapped in Bootstrap .col-xs-12 (15px left padding),
-         * while group fields ("Nutritional History", checkboxes, etc.) are direct
-         * children of .row with no column gutter. Zero the title column padding
-         * so the blue page-header / form title aligns with the white-card content.
+         * Match Meal Satisfaction Questionnaire card chrome:
+         * - Title (blue page-header) left edge flush with white card
+         * - Save / Cancel / Back button group right edge flush with white card
+         *
+         * Title + actions sit in Bootstrap .col-xs-12 (15px gutters) while group
+         * fields are bare .row children. Zero those gutters and right-align
+         * actions so both edges match the card (same as lt_meal_satisfaction).
          */
-        .lbf-page-header-col {
+        body.body_top > .container.lbf-card-flush,
+        .container.lbf-card-flush {
+            width: 100% !important;
+            max-width: none !important;
             padding-left: 0 !important;
             padding-right: 0 !important;
+        }
+        .container.lbf-card-flush > form > .container-responsive > .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+        .lbf-page-header-col,
+        .lbf-actions-col {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            float: none !important;
+            width: 100% !important;
         }
         .lbf-page-header-col > .page-header {
             margin-left: 0 !important;
             margin-right: 0 !important;
+            margin-top: 0 !important;
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
         .lbf-page-header-col > .page-header > h3 {
             margin-left: 0 !important;
             padding-left: 0 !important;
+        }
+        /* Buttons: right edge flush with card (Meal Satisfaction look). */
+        .lbf-actions-col {
+            text-align: right !important;
+        }
+        .lbf-actions-col > .btn-group {
+            float: none !important;
+            display: inline-block;
+            text-align: left;
+            margin-right: 0 !important;
+        }
+        .lbf-actions-col > hr {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
 
     </style>
@@ -748,9 +780,13 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 <body class="body_top"<?php if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
 } ?>>
-<div class='container'>
+<?php
+// Full-bleed card chrome: title left + action buttons right flush with edges
+// (Meal Satisfaction Questionnaire reference look).
+?>
+<div class='container lbf-card-flush'>
     <?php
-    echo "<form method='post' " .
+    echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -1481,7 +1517,11 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             ?>
             <br>
 
-            <div class="col-xs-12">
+            <!--
+              lbf-actions-col: no Bootstrap gutter; right-align so Save/Cancel/Back
+              right edge matches the white card (Meal Satisfaction look).
+            -->
+            <div class="col-xs-12 lbf-actions-col">
                 <div class="btn-group">
 
                     <?php
