@@ -81,15 +81,22 @@ $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
 // Shared LBF UI flags — extend these matchers for additional formnames.
-// Vertical center: multi-line labels aligned with controls.
+//
+// REFERENCE chrome: lt_ward_dietary_requirements. Patient Transfer must match
+// that look (header/actions flush is universal via lbf-card-flush).
+// Ward-style pair gets mild valign-middle + Add More border kill — NOT the
+// meal-satisfaction nuclear flex vcenter (flex breaks multi-column CPR rows).
+$lbf_ward_style = (stripos($formname, 'ward_dietary') !== false)
+    || (stripos($formname, 'dietary_requirements') !== false)
+    || (stripos($formname, 'patient_transfer') !== false);
+// Meal Satisfaction only: nuclear flex vertical center.
 $lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false)
     || (stripos($formname, 'meal_sat') !== false)
-    || (stripos($formname, 'patient_transfer') !== false)
     || (bool) preg_match('/meal.*satisfac|satisfac.*meal/i', (string) $formname);
 // Suppress Bootstrap/LBF row border-top on Add More / stacked rows.
 $lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
     || (stripos($formname, 'feeding_regime') !== false)
-    || (stripos($formname, 'patient_transfer') !== false);
+    || !empty($lbf_ward_style);
 
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
@@ -119,18 +126,37 @@ if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
 }
 // Also match by layout / group title.
+if (!$lbf_ward_style && !empty($formtitle)) {
+    $lbf_ward_style = (stripos($formtitle, 'Ward Dietary') !== false)
+        || (stripos($formtitle, 'Dietary Requirements') !== false)
+        || (stripos($formtitle, 'Patient Transfer') !== false)
+        || (bool) preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer/i', (string) $formtitle);
+}
+if (!$lbf_ward_style && is_array($grparr)) {
+    foreach ($grparr as $gprop) {
+        if (empty($gprop['grp_title'])) {
+            continue;
+        }
+        if (preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer/i', (string) $gprop['grp_title'])) {
+            $lbf_ward_style = true;
+            break;
+        }
+    }
+}
+if ($lbf_ward_style) {
+    $lbf_suppress_row_borders = true;
+}
 if (!$lbf_vcenter_fields && !empty($formtitle)) {
     $lbf_vcenter_fields = (stripos($formtitle, 'Meal Satisfaction') !== false)
         || (stripos($formtitle, 'MEAL SATISFACTION') !== false)
-        || (stripos($formtitle, 'Patient Transfer') !== false)
-        || (bool) preg_match('/meal\s*satisfac|patient\s*transfer/i', (string) $formtitle);
+        || (bool) preg_match('/meal\s*satisfac/i', (string) $formtitle);
 }
 if (!$lbf_vcenter_fields && is_array($grparr)) {
     foreach ($grparr as $gprop) {
         if (empty($gprop['grp_title'])) {
             continue;
         }
-        if (preg_match('/meal\s*satisfac|patient\s*transfer/i', (string) $gprop['grp_title'])) {
+        if (preg_match('/meal\s*satisfac/i', (string) $gprop['grp_title'])) {
             $lbf_vcenter_fields = true;
             break;
         }
@@ -138,8 +164,7 @@ if (!$lbf_vcenter_fields && is_array($grparr)) {
 }
 if (!$lbf_suppress_row_borders && !empty($formtitle)) {
     $lbf_suppress_row_borders = (stripos($formtitle, 'Prescribed Feeding') !== false)
-        || (stripos($formtitle, 'Feeding Regime') !== false)
-        || (stripos($formtitle, 'Patient Transfer') !== false);
+        || (stripos($formtitle, 'Feeding Regime') !== false);
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -445,9 +470,34 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             margin-right: 0 !important;
         }
 
+
+        <?php if (!empty($lbf_ward_style)) { ?>
+        /*
+         * Ward Dietary Requirements reference chrome for patient transfer (etc).
+         * Mild vertical-align:middle only — keep table layout (no flex) so
+         * multi-column CPR rows match lt_ward_dietary_requirements.
+         */
+        body.lbf-ward-style table.lbfdata > tbody > tr > td,
+        body.lbf-ward-style table.lbfdata td,
+        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata > tbody > tr > td,
+        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata td,
+        .table > tbody > tr > td.lbf-ward-cell {
+            vertical-align: middle !important;
+        }
+        body.lbf-ward-style table.lbfdata input,
+        body.lbf-ward-style table.lbfdata select,
+        body.lbf-ward-style table.lbfdata textarea,
+        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata input,
+        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata select,
+        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata textarea {
+            vertical-align: middle !important;
+        }
+        <?php } ?>
+
         <?php if (!empty($lbf_vcenter_fields)) { ?>
         /*
-         * Shared LBF vertical center (meal satisfaction, patient transfer, …).
+         * Meal Satisfaction nuclear flex vertical center (NOT used for ward dietary /
+         * patient transfer — those use lbf-ward-style mild valign instead).
          * Beats Bootstrap `.table td { vertical-align: top }` and LBF valign=top.
          */
         body.lbf-vcenter-fields form.lbf-form table.lbfdata,
@@ -501,7 +551,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         <?php if (!empty($lbf_suppress_row_borders)) { ?>
         /*
-         * Shared LBF row-border kill (feeding regime, patient transfer Add More, …).
+         * Shared LBF row-border kill (feeding regime, ward dietary / patient transfer Add More, …).
          * Wins over Bootstrap: .table > tbody > tr > td { border-top: 1px solid #ddd; }
          */
         html body form.lbf-form table,
@@ -610,15 +660,61 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         $(document).ready(function () {
 
-            // Shared LBF vertical center (meal satisfaction / patient transfer / …).
+            // Mild ward-style valign (ward dietary / patient transfer) — no flex.
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_ward_style) ? 'true' : 'false'; ?>;
+                function looksLikeWardStyle() {
+                    if (phpFlag) { return true; }
+                    var href = String(window.location.href || '');
+                    if (/ward_dietary|dietary_requirements|patient_transfer/i.test(href)) { return true; }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER/i.test(txt);
+                }
+                function ensureWardCss() {
+                    if (document.getElementById('lbf-ward-style-js')) { return; }
+                    var s = document.createElement('style');
+                    s.id = 'lbf-ward-style-js';
+                    s.type = 'text/css';
+                    s.appendChild(document.createTextNode(
+                        'body.lbf-ward-style table.lbfdata td,' +
+                        'form.lbf-form[data-lbf-ward-style="1"] table.lbfdata td{' +
+                        'vertical-align:middle!important;}'
+                    ));
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                function applyWardStyle() {
+                    if (!looksLikeWardStyle()) { return; }
+                    ensureWardCss();
+                    if (document.body) {
+                        document.body.classList.add('lbf-ward-style');
+                        document.body.setAttribute('data-lbf-ward-style', '1');
+                    }
+                    var forms = document.querySelectorAll('form.lbf-form, form');
+                    for (var f = 0; f < forms.length; f++) {
+                        forms[f].setAttribute('data-lbf-ward-style', '1');
+                        if (forms[f].classList) { forms[f].classList.add('lbf-form'); }
+                    }
+                    var cells = document.querySelectorAll('table.lbfdata td, table.lbfdata th');
+                    for (var c = 0; c < cells.length; c++) {
+                        cells[c].classList.add('lbf-ward-cell');
+                        cells[c].setAttribute('valign', 'middle');
+                        cells[c].style.setProperty('vertical-align', 'middle', 'important');
+                    }
+                }
+                applyWardStyle();
+                setTimeout(applyWardStyle, 0);
+                setTimeout(applyWardStyle, 100);
+            })();
+
+            // Meal Satisfaction nuclear flex vertical center (meal only).
             (function () {
                 var phpFlag = <?php echo !empty($lbf_vcenter_fields) ? 'true' : 'false'; ?>;
                 function looksLikeVcenterForm() {
                     if (phpFlag) { return true; }
                     var href = String(window.location.href || '');
-                    if (/meal_satisfaction|meal_sat|meal.*satisfac|patient_transfer/i.test(href)) { return true; }
+                    if (/meal_satisfaction|meal_sat|meal.*satisfac/i.test(href)) { return true; }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
-                    if (/MEAL\s*SATISFACTION|PATIENT\s*TRANSFER|Did you need assistance with eating|What portion of your meal/i.test(txt)) {
+                    if (/MEAL\s*SATISFACTION|Did you need assistance with eating|What portion of your meal/i.test(txt)) {
                         return true;
                     }
                     return false;
@@ -681,13 +777,13 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 setTimeout(nukeVcenter, 100);
             })();
 
-            // Shared LBF row-border kill (feeding regime / patient transfer Add More / …).
+            // Shared LBF row-border kill (feeding regime / ward dietary / patient transfer Add More / …).
             (function () {
                 var phpFlag = <?php echo !empty($lbf_suppress_row_borders) ? 'true' : 'false'; ?>;
                 function looksLikeNoRowBorders() {
                     if (phpFlag) { return true; }
                     var href = String(window.location.href || '');
-                    if (/prescribed_feeding|feeding_regime|patient_transfer/i.test(href)) { return true; }
+                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer/i.test(href)) { return true; }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
                     var hasRoute = /Route/i.test(txt);
                     var hasVolume = /Volume/i.test(txt);
@@ -1139,6 +1235,9 @@ $lbf_body_class = 'body_top';
 if ($formname !== '') {
     $lbf_body_class .= ' lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
 }
+if (!empty($lbf_ward_style)) {
+    $lbf_body_class .= ' lbf-ward-style';
+}
 if (!empty($lbf_vcenter_fields)) {
     $lbf_body_class .= ' lbf-vcenter-fields';
 }
@@ -1147,6 +1246,9 @@ if (!empty($lbf_suppress_row_borders)) {
 }
 ?>
 <body class="<?php echo attr($lbf_body_class); ?>"<?php
+if (!empty($lbf_ward_style)) {
+    echo " data-lbf-ward-style='1'";
+}
 if (!empty($lbf_vcenter_fields)) {
     echo " data-lbf-vcenter='1'";
 }
@@ -1159,11 +1261,12 @@ if ($from_issue_form) {
 ?>>
 <?php
 // Full-bleed card chrome: title left + action buttons right flush with edges
-// (Meal Satisfaction Questionnaire / Patient Transfer reference look).
+// (Ward Dietary Requirements / Patient Transfer reference look).
 ?>
 <div class='container lbf-card-flush'>
     <?php
     echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
+        (!empty($lbf_ward_style) ? "data-lbf-ward-style='1' " : "") .
         (!empty($lbf_vcenter_fields) ? "data-lbf-vcenter='1' " : "") .
         (!empty($lbf_suppress_row_borders) ? "data-lbf-nuke-row-borders='1' " : "") .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
@@ -1474,12 +1577,20 @@ if ($from_issue_form) {
                 $lbf_cell_border_style = !empty($lbf_suppress_row_borders)
                     ? "border:0!important;border-top:0!important;border-bottom:0!important;"
                     : '';
-                // Default LBF uses valign=top; vcenter forms use middle.
-                $lbf_td_valign = !empty($lbf_vcenter_fields) ? 'middle' : 'top';
-                $lbf_td_vcenter_style = !empty($lbf_vcenter_fields)
-                    ? "vertical-align:middle!important;display:flex;align-items:center;flex-wrap:wrap;"
-                    : '';
-                $lbf_td_vcenter_class = !empty($lbf_vcenter_fields) ? ' lbf-vcenter-cell' : '';
+                // Ward-style / meal vcenter use middle; meal also gets nuclear flex styles.
+                $lbf_td_valign = (!empty($lbf_vcenter_fields) || !empty($lbf_ward_style)) ? 'middle' : 'top';
+                if (!empty($lbf_vcenter_fields)) {
+                    // Meal satisfaction only — flex center (single field-per-row layouts).
+                    $lbf_td_vcenter_style = "vertical-align:middle!important;display:flex;align-items:center;flex-wrap:wrap;";
+                    $lbf_td_vcenter_class = ' lbf-vcenter-cell';
+                } else if (!empty($lbf_ward_style)) {
+                    // Ward dietary reference: mild valign only (keep table cells).
+                    $lbf_td_vcenter_style = "vertical-align:middle!important;";
+                    $lbf_td_vcenter_class = ' lbf-ward-cell';
+                } else {
+                    $lbf_td_vcenter_style = '';
+                    $lbf_td_vcenter_class = '';
+                }
 
 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {

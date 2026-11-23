@@ -19,6 +19,8 @@ $FONTSIZE = 9;
 $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
     || (stripos($formname, 'feeding_regime') !== false)
+    || (stripos($formname, 'ward_dietary') !== false)
+    || (stripos($formname, 'dietary_requirements') !== false)
     || (stripos($formname, 'patient_transfer') !== false);
 
 $patientid = empty($_REQUEST['patientid']) ? 0 : (0 + $_REQUEST['patientid']);
@@ -218,7 +220,7 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
 }
 
 <?php if (!empty($lbf_suppress_row_borders)) { ?>
-/* Shared LBF: no grey row separators (print) for feeding regime / patient transfer. */
+/* Shared LBF: no grey row separators (print) — feeding / ward dietary / patient transfer. */
 body[class*="prescribed_feeding"] tr.RS,
 body[class*="prescribed_feeding"] td.RS,
 body[class*="prescribed_feeding"] tr.RO,
@@ -227,6 +229,10 @@ body[class*="prescribed_feeding"] table tr,
 body[class*="prescribed_feeding"] table td,
 body[class*="feeding_regime"] table tr,
 body[class*="feeding_regime"] table td,
+body[class*="ward_dietary"] table tr,
+body[class*="ward_dietary"] table td,
+body[class*="dietary_requirements"] table tr,
+body[class*="dietary_requirements"] table td,
 body[class*="patient_transfer"] tr.RS,
 body[class*="patient_transfer"] td.RS,
 body[class*="patient_transfer"] tr.RO,
