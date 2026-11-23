@@ -473,10 +473,106 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         <?php if (!empty($lbf_ward_style)) { ?>
         /*
-         * Ward Dietary Requirements reference chrome for patient transfer (etc).
-         * Mild vertical-align:middle only — keep table layout (no flex) so
-         * multi-column CPR rows match lt_ward_dietary_requirements.
+         * Ward Dietary Requirements carded layout (also patient transfer).
+         * 1) Top blue bar: title left + Save / Don't Save / Back right
+         * 2+3) Each LBF group → white rounded card (heading + fields), gap between
          */
+        body.lbf-ward-style,
+        body.lbf-ward-style.body_top {
+            background: #e9ecef !important;
+        }
+        body.lbf-ward-style .container.lbf-card-flush {
+            background: transparent !important;
+            padding: 0 12px !important;
+            box-sizing: border-box;
+        }
+        body.lbf-ward-style .lbf-top-bar {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: #2a6ebb !important;
+            color: #fff !important;
+            border-radius: 6px;
+            padding: 10px 14px !important;
+            margin: 8px 0 14px 0 !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        body.lbf-ward-style .lbf-top-bar .lbf-top-title,
+        body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
+        body.lbf-ward-style .lbf-top-bar .page-header,
+        body.lbf-ward-style .lbf-top-bar .page-header h3 {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            color: #fff !important;
+            font-size: 16px !important;
+            font-weight: 600;
+            background: transparent !important;
+        }
+        body.lbf-ward-style .lbf-top-bar .lbf-top-title select {
+            color: #333 !important;
+        }
+        body.lbf-ward-style .lbf-top-actions {
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        body.lbf-ward-style .lbf-top-actions .btn-group {
+            float: none !important;
+            display: inline-flex !important;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        body.lbf-ward-style .lbf-top-actions .btn,
+        body.lbf-ward-style .lbf-top-actions button {
+            margin: 0 2px !important;
+        }
+        body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated {
+            display: none !important;
+        }
+        body.lbf-ward-style .lbf-group-card {
+            background: #fff !important;
+            border: 1px solid #d7dde5 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            padding: 12px 16px 16px 16px !important;
+            margin: 0 0 16px 0 !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        body.lbf-ward-style .lbf-group-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 10px 0 !important;
+            padding: 0 0 8px 0 !important;
+            border-bottom: 1px solid #eef1f5;
+            font-weight: 700;
+            font-size: 13px;
+            color: #1f3b5b;
+        }
+        body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
+            margin: 0 6px 0 0 !important;
+        }
+        body.lbf-ward-style .lbf-group-card-header b,
+        body.lbf-ward-style .lbf-group-card-header .lbf-group-card-title {
+            font-weight: 700;
+            color: #1f3b5b;
+        }
+        body.lbf-ward-style .lbf-group-card div.section,
+        body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
+        body.lbf-ward-style div.section.lbf-group-card-body {
+            border: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+        }
+        body.lbf-ward-style table.lbfdata {
+            width: 100% !important;
+        }
         body.lbf-ward-style table.lbfdata > tbody > tr > td,
         body.lbf-ward-style table.lbfdata td,
         form.lbf-form[data-lbf-ward-style='1'] table.lbfdata > tbody > tr > td,
@@ -660,7 +756,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         $(document).ready(function () {
 
-            // Mild ward-style valign (ward dietary / patient transfer) — no flex.
+            // Ward Dietary carded layout (also patient transfer).
             (function () {
                 var phpFlag = <?php echo !empty($lbf_ward_style) ? 'true' : 'false'; ?>;
                 function looksLikeWardStyle() {
@@ -676,11 +772,60 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     s.id = 'lbf-ward-style-js';
                     s.type = 'text/css';
                     s.appendChild(document.createTextNode(
-                        'body.lbf-ward-style table.lbfdata td,' +
-                        'form.lbf-form[data-lbf-ward-style="1"] table.lbfdata td{' +
-                        'vertical-align:middle!important;}'
+                        'body.lbf-ward-style{background:#e9ecef!important;}' +
+                        'body.lbf-ward-style .lbf-group-card{background:#fff!important;border:1px solid #d7dde5!important;' +
+                        'border-radius:8px!important;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:12px 16px 16px!important;margin:0 0 16px!important;}' +
+                        'body.lbf-ward-style .lbf-group-card div.section{border:0!important;margin:0!important;padding:0!important;}' +
+                        'body.lbf-ward-style table.lbfdata td{vertical-align:middle!important;}' +
+                        'body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated{display:none!important;}'
                     ));
                     (document.head || document.documentElement).appendChild(s);
+                }
+                function wrapGroupsIntoCards() {
+                    var sections = document.querySelectorAll('form.lbf-form div.section');
+                    for (var i = 0; i < sections.length; i++) {
+                        var sec = sections[i];
+                        if (sec.closest && sec.closest('.lbf-group-card')) { continue; }
+                        if (sec.classList && sec.classList.contains('lbf-group-card-body')) { continue; }
+                        var prev = sec.previousSibling;
+                        while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                            prev = prev.previousSibling;
+                        }
+                        while (prev && prev.nodeType === 1 && /^(BR|HR)$/i.test(prev.tagName || '')) {
+                            prev = prev.previousSibling;
+                            while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                                prev = prev.previousSibling;
+                            }
+                        }
+                        var titleEl = null;
+                        if (prev && prev.nodeType === 1 && (/SPAN/i.test(prev.tagName) || (prev.querySelector && prev.querySelector('input[type=checkbox]')))) {
+                            titleEl = prev;
+                        }
+                        var card = document.createElement('div');
+                        card.className = 'lbf-group-card';
+                        var header = document.createElement('div');
+                        header.className = 'lbf-group-card-header';
+                        if (titleEl) { header.appendChild(titleEl); }
+                        sec.parentNode.insertBefore(card, sec);
+                        card.appendChild(header);
+                        sec.classList.add('lbf-group-card-body');
+                        card.appendChild(sec);
+                    }
+                }
+                function moveActionsToTopBar() {
+                    var topBar = document.querySelector('.lbf-top-bar .lbf-top-actions');
+                    var actionsCol = document.querySelector('.lbf-actions-col');
+                    if (!topBar || !actionsCol) { return; }
+                    var btnGroup = actionsCol.querySelector('.btn-group');
+                    if (!btnGroup || topBar.contains(btnGroup)) { return; }
+                    topBar.appendChild(btnGroup);
+                    actionsCol.classList.add('lbf-actions-relocated');
+                    var cancelBtns = topBar.querySelectorAll('.btn-cancel');
+                    for (var b = 0; b < cancelBtns.length; b++) {
+                        if (/cancel/i.test(cancelBtns[b].textContent || '')) {
+                            cancelBtns[b].textContent = cancelBtns[b].textContent.replace(/Cancel/ig, "Don't Save");
+                        }
+                    }
                 }
                 function applyWardStyle() {
                     if (!looksLikeWardStyle()) { return; }
@@ -694,6 +839,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         forms[f].setAttribute('data-lbf-ward-style', '1');
                         if (forms[f].classList) { forms[f].classList.add('lbf-form'); }
                     }
+                    wrapGroupsIntoCards();
+                    moveActionsToTopBar();
                     var cells = document.querySelectorAll('table.lbfdata td, table.lbfdata th');
                     for (var c = 0; c < cells.length; c++) {
                         cells[c].classList.add('lbf-ward-cell');
@@ -1290,8 +1437,8 @@ if ($from_issue_form) {
               lbf-page-header-col: no Bootstrap column gutter so the title /
               page-header left edge matches group fields (not indented).
             -->
-            <div class="col-xs-12 lbf-page-header-col">
-                <div class="page-header">
+            <div class="col-xs-12 lbf-page-header-col<?php echo !empty($lbf_ward_style) ? ' lbf-top-bar' : ''; ?>">
+                <div class="<?php echo !empty($lbf_ward_style) ? 'lbf-top-title page-header' : 'page-header'; ?>">
                     <h3>
                         <?php echo text($formtitle) . " " . xlt('for') . ' ';
                         echo text($enrow['fname']) . ' ' . text($enrow['mname']) . ' ' . text($enrow['lname']);
@@ -1335,6 +1482,9 @@ if ($from_issue_form) {
                     }
                     ?>
                 </div>
+                <?php if (!empty($lbf_ward_style)) { ?>
+                <div class="lbf-top-actions" aria-label="Form actions"></div>
+                <?php } ?>
             </div>
 
             <?php $cmsportal_login = $enrow['cmsportal_login'];
@@ -1482,7 +1632,10 @@ if ($from_issue_form) {
                     $group_levels = substr($group_levels, 0, -1); // remove last character
                     // No div for an empty group name.
                     if (strlen($gname)) {
-                        echo "</div>\n";
+                        echo "</div>\n"; // .section
+                        if (!empty($lbf_ward_style)) {
+                            echo "</div>\n"; // .lbf-group-card
+                        }
                     }
                 }
 
@@ -1507,14 +1660,28 @@ if ($from_issue_form) {
 
                     // If group name is blank, no checkbox or div.
                     if (strlen($gname)) {
-                        echo "<br /><span class='bold'><input type='checkbox' name='form_cb_" . attr($group_seq) . "' value='1' " .
-                            "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
-                        if ($display_style == 'block') {
-                            echo " checked";
-                        }
+                        if (!empty($lbf_ward_style)) {
+                            // Ward Dietary card: one white card per LBF group.
+                            echo "<div class='lbf-group-card' data-lbf-group='" . attr($group_seq) . "'>\n";
+                            echo "<div class='lbf-group-card-header'>\n";
+                            echo "<span class='bold lbf-group-card-title'><input type='checkbox' class='lbf-group-toggle' name='form_cb_" . attr($group_seq) . "' value='1' " .
+                                "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
+                            if ($display_style == 'block') {
+                                echo " checked";
+                            }
+                            echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
+                            echo "</div>\n";
+                            echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive lbf-group-card-body' style='display:" . attr($display_style) . ";'>\n";
+                        } else {
+                            echo "<br /><span class='bold'><input type='checkbox' name='form_cb_" . attr($group_seq) . "' value='1' " .
+                                "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
+                            if ($display_style == 'block') {
+                                echo " checked";
+                            }
 
-                        echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
-                        echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive' style='display:" . attr($display_style) . ";'>\n";
+                            echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
+                            echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive' style='display:" . attr($display_style) . ";'>\n";
+                        }
                     }
 
                     $group_table_active = true;
@@ -1735,7 +1902,10 @@ if ($from_issue_form) {
                 $group_levels = substr($group_levels, 0, -1); // remove last character
                 // No div for an empty group name.
                 if (strlen($gname)) {
-                    echo "</div>\n";
+                    echo "</div>\n"; // .section
+                    if (!empty($lbf_ward_style)) {
+                        echo "</div>\n"; // .lbf-group-card
+                    }
                 }
             }
 
