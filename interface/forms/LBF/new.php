@@ -473,37 +473,50 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         <?php if (!empty($lbf_ward_style)) { ?>
         /*
-         * Ward Dietary Requirements carded layout (also patient transfer).
-         * 1) Top blue bar: title left + Save / Don't Save / Back right
-         * 2+3) Each LBF group → white rounded card (heading + fields), gap between
+         * IMAGE 2 reference (Ward Dietary Requirements):
+         * - Header OUTSIDE cards (title left, actions right) on grey page
+         * - Each section/group = its OWN white rounded card with gap between
+         * Do NOT nest title/buttons inside a single outer white card.
          */
-        body.lbf-ward-style,
-        body.lbf-ward-style.body_top {
+        html body.lbf-ward-style,
+        html body.lbf-ward-style.body_top,
+        html body.lbf-ward-style.body_top > .container,
+        html body.lbf-ward-style .container.lbf-card-flush,
+        html body.lbf-ward-style form.lbf-form,
+        html body.lbf-ward-style .container-responsive,
+        html body.lbf-ward-style .container-responsive > .row,
+        html body.lbf-ward-style .col-xs-12 {
             background: #e9ecef !important;
+            background-color: #e9ecef !important;
+            box-shadow: none !important;
         }
-        body.lbf-ward-style .container.lbf-card-flush {
-            background: transparent !important;
-            padding: 0 12px !important;
-            box-sizing: border-box;
+        html body.lbf-ward-style .container.lbf-card-flush {
+            padding: 10px 14px !important;
+            max-width: none !important;
+            width: 100% !important;
         }
-        body.lbf-ward-style .lbf-top-bar {
+        /* Header bar OUTSIDE cards */
+        html body.lbf-ward-style .lbf-top-bar {
             display: flex !important;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             flex-wrap: wrap;
             background: #2a6ebb !important;
+            background-color: #2a6ebb !important;
             color: #fff !important;
-            border-radius: 6px;
+            border-radius: 6px !important;
             padding: 10px 14px !important;
-            margin: 8px 0 14px 0 !important;
-            width: 100%;
+            margin: 0 0 16px 0 !important;
+            width: 100% !important;
             box-sizing: border-box;
+            border: 0 !important;
+            box-shadow: none !important;
         }
-        body.lbf-ward-style .lbf-top-bar .lbf-top-title,
-        body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
-        body.lbf-ward-style .lbf-top-bar .page-header,
-        body.lbf-ward-style .lbf-top-bar .page-header h3 {
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
+        html body.lbf-ward-style .lbf-top-bar .page-header,
+        html body.lbf-ward-style .lbf-top-bar .page-header h3 {
             margin: 0 !important;
             padding: 0 !important;
             border: 0 !important;
@@ -512,82 +525,85 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             font-weight: 600;
             background: transparent !important;
         }
-        body.lbf-ward-style .lbf-top-bar .lbf-top-title select {
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title select {
             color: #333 !important;
         }
-        body.lbf-ward-style .lbf-top-actions {
+        html body.lbf-ward-style .lbf-top-actions {
             margin-left: auto;
-            white-space: nowrap;
         }
-        body.lbf-ward-style .lbf-top-actions .btn-group {
+        html body.lbf-ward-style .lbf-top-actions .btn-group {
             float: none !important;
             display: inline-flex !important;
             align-items: center;
             gap: 4px;
             flex-wrap: wrap;
+            background: transparent !important;
         }
-        body.lbf-ward-style .lbf-top-actions .btn,
-        body.lbf-ward-style .lbf-top-actions button {
-            margin: 0 2px !important;
-        }
-        body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated {
+        html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated {
             display: none !important;
         }
-        body.lbf-ward-style .lbf-group-card {
-            background: #fff !important;
-            border: 1px solid #d7dde5 !important;
-            border-radius: 8px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            padding: 12px 16px 16px 16px !important;
-            margin: 0 0 16px 0 !important;
+        /* Stack of SEPARATE white cards (gap must show grey) */
+        html body.lbf-ward-style .lbf-cards-stack {
+            display: block;
             width: 100%;
-            box-sizing: border-box;
+            background: transparent !important;
         }
-        body.lbf-ward-style .lbf-group-card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 0 10px 0 !important;
+        html body.lbf-ward-style .lbf-group-card {
+            display: block !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #c5ced8 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+            padding: 14px 16px 16px 16px !important;
+            margin: 0 0 18px 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            float: none !important;
+            clear: both !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header {
+            display: block !important;
+            margin: 0 0 12px 0 !important;
             padding: 0 0 8px 0 !important;
-            border-bottom: 1px solid #eef1f5;
-            font-weight: 700;
-            font-size: 13px;
-            color: #1f3b5b;
+            border: 0 !important;
+            border-bottom: 1px solid #e6ebf0 !important;
+            background: transparent !important;
+            font-weight: 700 !important;
+            font-size: 13px !important;
+            color: #1f3b5b !important;
         }
-        body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
-            margin: 0 6px 0 0 !important;
+        html body.lbf-ward-style .lbf-group-card-header input[type=checkbox],
+        html body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
+            margin-right: 6px !important;
         }
-        body.lbf-ward-style .lbf-group-card-header b,
-        body.lbf-ward-style .lbf-group-card-header .lbf-group-card-title {
-            font-weight: 700;
-            color: #1f3b5b;
-        }
-        body.lbf-ward-style .lbf-group-card div.section,
-        body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
-        body.lbf-ward-style div.section.lbf-group-card-body {
+        html body.lbf-ward-style .lbf-group-card div.section,
+        html body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
+        html body.lbf-ward-style div.section.lbf-group-card-body {
             border: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             background: transparent !important;
+            display: block !important;
         }
-        body.lbf-ward-style table.lbfdata {
+        html body.lbf-ward-style table.lbfdata {
             width: 100% !important;
+            background: transparent !important;
         }
-        body.lbf-ward-style table.lbfdata > tbody > tr > td,
-        body.lbf-ward-style table.lbfdata td,
-        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata > tbody > tr > td,
-        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata td,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td,
+        html body.lbf-ward-style table.lbfdata td,
         .table > tbody > tr > td.lbf-ward-cell {
             vertical-align: middle !important;
+            background: transparent !important;
         }
-        body.lbf-ward-style table.lbfdata input,
-        body.lbf-ward-style table.lbfdata select,
-        body.lbf-ward-style table.lbfdata textarea,
-        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata input,
-        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata select,
-        form.lbf-form[data-lbf-ward-style='1'] table.lbfdata textarea {
-            vertical-align: middle !important;
+        /* Kill legacy blue section box if still present outside cards */
+        html body.lbf-ward-style div.section:not(.lbf-group-card-body) {
+            border: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
+        <?php } ?>
+
         <?php } ?>
 
         <?php if (!empty($lbf_vcenter_fields)) { ?>
@@ -756,37 +772,160 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
         $(document).ready(function () {
 
-            // Ward Dietary carded layout (also patient transfer).
+            // Ward Dietary carded layout (IMAGE 2) — also patient transfer.
             (function () {
                 var phpFlag = <?php echo !empty($lbf_ward_style) ? 'true' : 'false'; ?>;
+                var SECTION_TITLE_RE = /^(WARD\s*INFORMATION|PATIENT\s*DIETARY\s*LIST|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|PATIENT\s*INFORMATION|TRANSFER\s*DETAILS)$/i;
+
                 function looksLikeWardStyle() {
                     if (phpFlag) { return true; }
                     var href = String(window.location.href || '');
                     if (/ward_dietary|dietary_requirements|patient_transfer/i.test(href)) { return true; }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
-                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER/i.test(txt);
+                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS/i.test(txt);
                 }
+
                 function ensureWardCss() {
-                    if (document.getElementById('lbf-ward-style-js')) { return; }
+                    if (document.getElementById('lbf-ward-cards-nuke')) { return; }
                     var s = document.createElement('style');
-                    s.id = 'lbf-ward-style-js';
+                    s.id = 'lbf-ward-cards-nuke';
                     s.type = 'text/css';
                     s.appendChild(document.createTextNode(
-                        'body.lbf-ward-style{background:#e9ecef!important;}' +
-                        'body.lbf-ward-style .lbf-group-card{background:#fff!important;border:1px solid #d7dde5!important;' +
-                        'border-radius:8px!important;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:12px 16px 16px!important;margin:0 0 16px!important;}' +
-                        'body.lbf-ward-style .lbf-group-card div.section{border:0!important;margin:0!important;padding:0!important;}' +
-                        'body.lbf-ward-style table.lbfdata td{vertical-align:middle!important;}' +
-                        'body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated{display:none!important;}'
+                        'html body.lbf-ward-style,html body.lbf-ward-style.body_top,' +
+                        'html body.lbf-ward-style .container,html body.lbf-ward-style form.lbf-form,' +
+                        'html body.lbf-ward-style .container-responsive,html body.lbf-ward-style .row,' +
+                        'html body.lbf-ward-style .col-xs-12{background:#e9ecef!important;box-shadow:none!important;}' +
+                        'html body.lbf-ward-style .lbf-top-bar{display:flex!important;background:#2a6ebb!important;color:#fff!important;' +
+                        'border-radius:6px!important;padding:10px 14px!important;margin:0 0 16px!important;width:100%!important;}' +
+                        'html body.lbf-ward-style .lbf-group-card{display:block!important;background:#fff!important;' +
+                        'border:1px solid #c5ced8!important;border-radius:8px!important;' +
+                        'box-shadow:0 1px 2px rgba(0,0,0,.06)!important;padding:14px 16px 16px!important;' +
+                        'margin:0 0 18px!important;width:100%!important;clear:both!important;}' +
+                        'html body.lbf-ward-style .lbf-group-card-header{display:block!important;font-weight:700!important;' +
+                        'border-bottom:1px solid #e6ebf0!important;padding:0 0 8px!important;margin:0 0 12px!important;}' +
+                        'html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated{display:none!important;}' +
+                        'html body.lbf-ward-style .lbf-group-card div.section{border:0!important;margin:0!important;padding:0!important;display:block!important;}'
                     ));
                     (document.head || document.documentElement).appendChild(s);
                 }
-                function wrapGroupsIntoCards() {
-                    var sections = document.querySelectorAll('form.lbf-form div.section');
+
+                function titleText(el) {
+                    if (!el) { return ''; }
+                    var t = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+                    // Strip leading checkbox artifacts
+                    return t.replace(/^\u2610|\u2611/, '').trim();
+                }
+
+                function isSectionTitleNode(el) {
+                    if (!el || el.nodeType !== 1) { return false; }
+                    if (el.closest && el.closest('.lbf-top-bar')) { return false; }
+                    if (el.closest && el.closest('.lbf-actions-col')) { return false; }
+                    var t = titleText(el);
+                    if (!t || t.length > 80) { return false; }
+                    if (SECTION_TITLE_RE.test(t)) { return true; }
+                    // Group title span with checkbox + bold
+                    if (/SPAN/i.test(el.tagName) && el.querySelector && el.querySelector('input[type=checkbox]') && el.querySelector('b')) {
+                        return true;
+                    }
+                    // Subtitle row cell (blue bold colspan)
+                    if (/TD|TH/i.test(el.tagName)) {
+                        var st = (el.getAttribute('style') || '') + ' ' + (el.className || '');
+                        if (/0000ff|color:\s*blue|bold/i.test(st) && SECTION_TITLE_RE.test(t)) { return true; }
+                        if (el.classList && el.classList.contains('bold') && SECTION_TITLE_RE.test(t)) { return true; }
+                    }
+                    return false;
+                }
+
+                function makeCard(titleNode, bodyNodes) {
+                    var card = document.createElement('div');
+                    card.className = 'lbf-group-card';
+                    var header = document.createElement('div');
+                    header.className = 'lbf-group-card-header';
+                    if (titleNode) {
+                        // If title is a table row/cell, use text only for clean header.
+                        if (titleNode.tagName && /TR|TD|TH/i.test(titleNode.tagName)) {
+                            var h = document.createElement('b');
+                            h.textContent = titleText(titleNode);
+                            header.appendChild(h);
+                        } else {
+                            header.appendChild(titleNode);
+                        }
+                    }
+                    card.appendChild(header);
+                    var body = document.createElement('div');
+                    body.className = 'lbf-group-card-body section';
+                    body.style.display = 'block';
+                    for (var i = 0; i < bodyNodes.length; i++) {
+                        if (bodyNodes[i]) { body.appendChild(bodyNodes[i]); }
+                    }
+                    card.appendChild(body);
+                    return card;
+                }
+
+                function ensureCardsStack(form) {
+                    var stack = form.querySelector('.lbf-cards-stack');
+                    if (stack) { return stack; }
+                    stack = document.createElement('div');
+                    stack.className = 'lbf-cards-stack';
+                    // Insert after top bar if present, else at start of responsive row content.
+                    var topBar = form.querySelector('.lbf-top-bar');
+                    var row = form.querySelector('.container-responsive > .row') || form;
+                    if (topBar && topBar.parentNode) {
+                        if (topBar.nextSibling) {
+                            topBar.parentNode.insertBefore(stack, topBar.nextSibling);
+                        } else {
+                            topBar.parentNode.appendChild(stack);
+                        }
+                    } else {
+                        row.appendChild(stack);
+                    }
+                    return stack;
+                }
+
+                function splitTableBySectionTitles(table) {
+                    var rows = Array.prototype.slice.call(table.rows || []);
+                    var breaks = [];
+                    for (var r = 0; r < rows.length; r++) {
+                        var tr = rows[r];
+                        var cell = tr.cells && tr.cells[0];
+                        var whole = titleText(tr);
+                        if ((cell && isSectionTitleNode(cell)) || SECTION_TITLE_RE.test(whole)) {
+                            breaks.push(r);
+                        }
+                    }
+                    if (breaks.length < 2) { return null; }
+                    var cards = [];
+                    for (var b = 0; b < breaks.length; b++) {
+                        var start = breaks[b];
+                        var end = (b + 1 < breaks.length) ? breaks[b + 1] : rows.length;
+                        var titleCell = rows[start].cells[0] || rows[start];
+                        var newTable = table.cloneNode(false);
+                        var tb = document.createElement('tbody');
+                        newTable.appendChild(tb);
+                        newTable.className = table.className;
+                        for (var i = start + 1; i < end; i++) {
+                            tb.appendChild(rows[i]);
+                        }
+                        // Skip empty spacer subtitle rows that are only height fillers
+                        cards.push(makeCard(titleCell, [newTable]));
+                    }
+                    return cards;
+                }
+
+                function wrapExistingGroupCards(form, stack) {
+                    var existing = form.querySelectorAll('.lbf-group-card');
+                    for (var i = 0; i < existing.length; i++) {
+                        stack.appendChild(existing[i]);
+                    }
+                    return existing.length;
+                }
+
+                function wrapSectionDivs(form, stack) {
+                    var sections = form.querySelectorAll('div.section');
+                    var count = 0;
                     for (var i = 0; i < sections.length; i++) {
                         var sec = sections[i];
                         if (sec.closest && sec.closest('.lbf-group-card')) { continue; }
-                        if (sec.classList && sec.classList.contains('lbf-group-card-body')) { continue; }
                         var prev = sec.previousSibling;
                         while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
                             prev = prev.previousSibling;
@@ -797,36 +936,73 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                                 prev = prev.previousSibling;
                             }
                         }
-                        var titleEl = null;
-                        if (prev && prev.nodeType === 1 && (/SPAN/i.test(prev.tagName) || (prev.querySelector && prev.querySelector('input[type=checkbox]')))) {
-                            titleEl = prev;
-                        }
-                        var card = document.createElement('div');
-                        card.className = 'lbf-group-card';
-                        var header = document.createElement('div');
-                        header.className = 'lbf-group-card-header';
-                        if (titleEl) { header.appendChild(titleEl); }
-                        sec.parentNode.insertBefore(card, sec);
-                        card.appendChild(header);
+                        var titleEl = (prev && prev.nodeType === 1 && isSectionTitleNode(prev)) ? prev : null;
+                        var card = makeCard(titleEl, [sec]);
                         sec.classList.add('lbf-group-card-body');
-                        card.appendChild(sec);
+                        stack.appendChild(card);
+                        count++;
                     }
+                    return count;
                 }
-                function moveActionsToTopBar() {
-                    var topBar = document.querySelector('.lbf-top-bar .lbf-top-actions');
-                    var actionsCol = document.querySelector('.lbf-actions-col');
-                    if (!topBar || !actionsCol) { return; }
+
+                function rebuildFromSectionTitles(form, stack) {
+                    // Handles IMAGE-1 case: one table / one block with bold section headings.
+                    var tables = form.querySelectorAll('table.lbfdata');
+                    var built = 0;
+                    for (var t = 0; t < tables.length; t++) {
+                        var table = tables[t];
+                        if (table.closest && table.closest('.lbf-group-card-body') && stack.querySelectorAll('.lbf-group-card').length >= 2) {
+                            continue;
+                        }
+                        var cards = splitTableBySectionTitles(table);
+                        if (!cards) { continue; }
+                        // Replace original table's card/section with split cards.
+                        var host = table.closest('.lbf-group-card') || table.parentNode;
+                        for (var c = 0; c < cards.length; c++) {
+                            stack.appendChild(cards[c]);
+                            built++;
+                        }
+                        if (host && host.classList && host.classList.contains('lbf-group-card')) {
+                            if (host.parentNode) { host.parentNode.removeChild(host); }
+                        } else if (table.parentNode) {
+                            table.parentNode.removeChild(table);
+                        }
+                    }
+                    return built;
+                }
+
+                function moveActionsToTopBar(form) {
+                    var topBar = form.querySelector('.lbf-top-bar') || document.querySelector('.lbf-top-bar');
+                    if (!topBar) { return; }
+                    var actionsSlot = topBar.querySelector('.lbf-top-actions');
+                    if (!actionsSlot) {
+                        actionsSlot = document.createElement('div');
+                        actionsSlot.className = 'lbf-top-actions';
+                        topBar.appendChild(actionsSlot);
+                    }
+                    var actionsCol = form.querySelector('.lbf-actions-col') || document.querySelector('.lbf-actions-col');
+                    if (!actionsCol) { return; }
                     var btnGroup = actionsCol.querySelector('.btn-group');
-                    if (!btnGroup || topBar.contains(btnGroup)) { return; }
-                    topBar.appendChild(btnGroup);
+                    if (!btnGroup) { return; }
+                    if (!actionsSlot.contains(btnGroup)) {
+                        actionsSlot.appendChild(btnGroup);
+                    }
                     actionsCol.classList.add('lbf-actions-relocated');
-                    var cancelBtns = topBar.querySelectorAll('.btn-cancel');
+                    var cancelBtns = actionsSlot.querySelectorAll('.btn-cancel');
                     for (var b = 0; b < cancelBtns.length; b++) {
                         if (/cancel/i.test(cancelBtns[b].textContent || '')) {
                             cancelBtns[b].textContent = cancelBtns[b].textContent.replace(/Cancel/ig, "Don't Save");
                         }
                     }
                 }
+
+                function forceSectionsOpen(form) {
+                    var secs = form.querySelectorAll('.lbf-group-card .section, .lbf-group-card-body');
+                    for (var i = 0; i < secs.length; i++) {
+                        secs[i].style.display = 'block';
+                    }
+                }
+
                 function applyWardStyle() {
                     if (!looksLikeWardStyle()) { return; }
                     ensureWardCss();
@@ -836,11 +1012,29 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
                     var forms = document.querySelectorAll('form.lbf-form, form');
                     for (var f = 0; f < forms.length; f++) {
-                        forms[f].setAttribute('data-lbf-ward-style', '1');
-                        if (forms[f].classList) { forms[f].classList.add('lbf-form'); }
+                        var form = forms[f];
+                        form.setAttribute('data-lbf-ward-style', '1');
+                        if (form.classList) { form.classList.add('lbf-form'); }
+
+                        // Promote page-header column to top bar if needed.
+                        var headerCol = form.querySelector('.lbf-page-header-col');
+                        if (headerCol && !headerCol.classList.contains('lbf-top-bar')) {
+                            headerCol.classList.add('lbf-top-bar');
+                        }
+
+                        moveActionsToTopBar(form);
+
+                        var stack = ensureCardsStack(form);
+                        var n = wrapExistingGroupCards(form, stack);
+                        if (n < 2) {
+                            n += wrapSectionDivs(form, stack);
+                        }
+                        // If still < 2 cards, split tables on Transfer Information / Clinical Status headings.
+                        if (stack.querySelectorAll('.lbf-group-card').length < 2) {
+                            rebuildFromSectionTitles(form, stack);
+                        }
+                        forceSectionsOpen(form);
                     }
-                    wrapGroupsIntoCards();
-                    moveActionsToTopBar();
                     var cells = document.querySelectorAll('table.lbfdata td, table.lbfdata th');
                     for (var c = 0; c < cells.length; c++) {
                         cells[c].classList.add('lbf-ward-cell');
@@ -848,9 +1042,11 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         cells[c].style.setProperty('vertical-align', 'middle', 'important');
                     }
                 }
+
                 applyWardStyle();
                 setTimeout(applyWardStyle, 0);
-                setTimeout(applyWardStyle, 100);
+                setTimeout(applyWardStyle, 50);
+                setTimeout(applyWardStyle, 200);
             })();
 
             // Meal Satisfaction nuclear flex vertical center (meal only).
