@@ -90,6 +90,7 @@ $lbf_ward_style = (stripos($formname, 'ward_dietary') !== false)
     || (stripos($formname, 'dietary_requirements') !== false)
     || (stripos($formname, 'patient_transfer') !== false)
     || (stripos($formname, 'lt_referral') !== false)
+    || (stripos($formname, 'patient_referral') !== false)
     || (strcasecmp(trim((string) $formname), 'referral') === 0);
 // Meal Satisfaction only: nuclear flex vertical center.
 $lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false)
@@ -537,7 +538,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             float: none !important;
             display: inline-flex !important;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
             background: transparent !important;
         }
@@ -796,7 +797,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 function looksLikeWardStyle() {
                     if (phpFlag) { return true; }
                     var href = String(window.location.href || '');
-                    if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral/i.test(href)) { return true; }
+                    if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral/i.test(href)) { return true; }
                     var h3 = document.querySelector('.page-header h3, .lbf-top-title h3');
                     if (h3) {
                         var h3Txt = (h3.innerText || h3.textContent || '').replace(/\s+/g, ' ').trim();
@@ -990,7 +991,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     for (var b = 0; b < breaks.length; b++) {
                         var start = breaks[b];
                         var end = (b + 1 < breaks.length) ? breaks[b + 1] : rows.length;
-                        var titleCell = rows[start].cells[0] || rows[start];
+                        var titleRow = rows[start];
                         var newTable = table.cloneNode(false);
                         var tb = document.createElement('tbody');
                         newTable.appendChild(tb);
@@ -1003,7 +1004,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             firstContentSeen = true;
                             tb.appendChild(rows[i]);
                         }
-                        cards.push(makeCard(titleCell, [newTable]));
+                        cards.push(makeCard(titleRow, [newTable]));
                     }
                     return cards;
                 }
@@ -1082,7 +1083,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         if (table.closest && table.closest('.lbf-group-card')) { continue; }
                         var titleNode = null;
                         if (table.rows && table.rows.length > 1 && isTableSectionHeadingRow(table.rows[0])) {
-                            titleNode = table.rows[0].cells[0] || table.rows[0];
+                            titleNode = table.rows[0];
                             table.deleteRow(0);
                             while (table.rows.length > 0 && isEmptySpacerRow(table.rows[0])) {
                                 table.deleteRow(0);
@@ -1257,7 +1258,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         return true;
                     }
                     var href = String(window.location.href || '');
-                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|lt_referral/i.test(href)) { return true; }
+                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral/i.test(href)) { return true; }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
                     var hasRoute = /Route/i.test(txt);
                     var hasVolume = /Volume/i.test(txt);

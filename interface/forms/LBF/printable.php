@@ -23,6 +23,7 @@ $lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
     || (stripos($formname, 'dietary_requirements') !== false)
     || (stripos($formname, 'patient_transfer') !== false)
     || (stripos($formname, 'lt_referral') !== false)
+    || (stripos($formname, 'patient_referral') !== false)
     || (strcasecmp(trim((string) $formname), 'referral') === 0);
 
 $patientid = empty($_REQUEST['patientid']) ? 0 : (0 + $_REQUEST['patientid']);
@@ -260,7 +261,13 @@ body[class*="lt_referral"] td.RS,
 body[class*="lt_referral"] tr.RO,
 body[class*="lt_referral"] td.RO,
 body[class*="lt_referral"] table tr,
-body[class*="lt_referral"] table td {
+body[class*="lt_referral"] table td,
+body[class*="patient_referral"] tr.RS,
+body[class*="patient_referral"] td.RS,
+body[class*="patient_referral"] tr.RO,
+body[class*="patient_referral"] td.RO,
+body[class*="patient_referral"] table tr,
+body[class*="patient_referral"] table td {
  border-top: none !important;
  border-bottom: none !important;
  border-width: 0 !important;
