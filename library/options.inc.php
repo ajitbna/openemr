@@ -877,13 +877,17 @@ function generate_form_field($frow, $currvalue)
                     echo "<tr>";
                 }
                 echo "<td width='" . attr($tdpct) . "%' nowrap>";
+                // Avoid .form-control on checkboxes (same overlap issue as radios).
+                echo "<label class='lbf-checkbox-option'>";
                 echo "<input type='checkbox' name='form_{$field_id_esc}[$option_id_esc]'" .
-                "id='form_{$field_id_esc}[$option_id_esc]' class='form-control' value='1' $lbfonchange";
+                "id='form_{$field_id_esc}[$option_id_esc]' value='1' $lbfonchange";
                 if (in_array($option_id, $avalue)) {
                     echo " checked";
                 }
                 // Added 5-09 by BM - Translate label if applicable
-                echo " $disabled />" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES);
+                echo " $disabled />";
+                echo "<span>" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES) . "</span>";
+                echo "</label>";
                 echo "</td>";
             }
             if ($count) {
@@ -1049,7 +1053,7 @@ function generate_form_field($frow, $currvalue)
 
             $option_id = htmlspecialchars($option_id, ENT_QUOTES);
             echo "<td><input type='checkbox' name='check_{$field_id_esc}[$option_id_esc]'" .
-            " id='check_{$field_id_esc}[$option_id_esc]' class='form-control' value='1' $lbfonchange";
+            " id='check_{$field_id_esc}[$option_id_esc]' value='1' $lbfonchange";
             if ($restype) {
                 echo " checked";
             }
@@ -1119,7 +1123,12 @@ function generate_form_field($frow, $currvalue)
             }
 
             echo "<td width='" . attr($tdpct) . "%'>";
-            echo "<input type='radio' name='form_{$field_id_esc}' class='form-control' id='form_{$field_id_esc}[$option_id_esc]'" .
+            // Do not use Bootstrap .form-control on radios: it forces
+            // display:block;width:100%;height:… which makes the circle fill
+            // the cell and overlap the following option title (seen on LBF
+            // fields such as Employment Status on lt_nutrition_screening_assessment).
+            echo "<label class='lbf-radio-option'>";
+            echo "<input type='radio' name='form_{$field_id_esc}' id='form_{$field_id_esc}[$option_id_esc]'" .
             " value='$option_id_esc' $lbfonchange";
             if ((strlen($currvalue) == 0 && $lrow['is_default']) ||
               (strlen($currvalue)  > 0 && $option_id == $currvalue)) {
@@ -1127,7 +1136,9 @@ function generate_form_field($frow, $currvalue)
                 $got_selected = true;
             }
 
-            echo " $disabled />" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES);
+            echo " $disabled />";
+            echo "<span>" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES) . "</span>";
+            echo "</label>";
             echo "</td>";
         }
 
@@ -1228,11 +1239,10 @@ function generate_form_field($frow, $currvalue)
             echo "<td class='bold'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . xlt('Status') . ":&nbsp;&nbsp;</td>";
         }
 
-        // current
-        echo "<td class='text' ><input type='radio'" .
+        // current — avoid .form-control on radios (causes label overlap)
+        echo "<td class='text'><label class='lbf-radio-option'><input type='radio'" .
         " name='radio_{$field_id_esc}'" .
         " id='radio_{$field_id_esc}[current]'" .
-        " class='form-control'" .
         " value='current" . $field_id_esc . "' $lbfonchange";
         if ($restype == "current" . $field_id) {
             echo " checked";
@@ -1242,12 +1252,11 @@ function generate_form_field($frow, $currvalue)
             echo " onClick='smoking_statusClicked(this)'";
         }
 
-        echo " />" . xlt('Current') . "&nbsp;</td>";
+        echo " /><span>" . xlt('Current') . "</span></label></td>";
         // quit
-        echo "<td class='text'><input type='radio'" .
+        echo "<td class='text'><label class='lbf-radio-option'><input type='radio'" .
         " name='radio_{$field_id_esc}'" .
         " id='radio_{$field_id_esc}[quit]'" .
-        " class='form-control'" .
         " value='quit".$field_id_esc."' $lbfonchange";
         if ($restype == "quit" . $field_id) {
             echo " checked";
@@ -1257,7 +1266,7 @@ function generate_form_field($frow, $currvalue)
             echo " onClick='smoking_statusClicked(this)'";
         }
 
-        echo " $disabled />" . xlt('Quit') . "&nbsp;</td>";
+        echo " $disabled /><span>" . xlt('Quit') . "</span></label></td>";
         // quit date
         echo "<td class='text'><input type='text' size='6' class='datepicker' name='date_$field_id_esc' id='date_$field_id_esc'" .
         " value='$resdate'" .
@@ -1265,9 +1274,8 @@ function generate_form_field($frow, $currvalue)
         " $disabled />";
         echo "&nbsp;</td>";
         // never
-        echo "<td class='text'><input type='radio'" .
+        echo "<td class='text'><label class='lbf-radio-option'><input type='radio'" .
         " name='radio_{$field_id_esc}'" .
-        " class='form-control'" .
         " id='radio_{$field_id_esc}[never]'" .
         " value='never" . $field_id_esc . "' $lbfonchange";
         if ($restype == "never" . $field_id) {
@@ -1278,10 +1286,9 @@ function generate_form_field($frow, $currvalue)
             echo " onClick='smoking_statusClicked(this)'";
         }
 
-        echo " />" . xlt('Never') . "&nbsp;</td>";
+        echo " /><span>" . xlt('Never') . "</span></label></td>";
         // Not Applicable
-        echo "<td class='text'><input type='radio'" .
-        " class='form-control' " .
+        echo "<td class='text'><label class='lbf-radio-option'><input type='radio'" .
         " name='radio_{$field_id}'" .
         " id='radio_{$field_id}[not_applicable]'" .
         " value='not_applicable" . $field_id . "' $lbfonchange";
@@ -1293,7 +1300,7 @@ function generate_form_field($frow, $currvalue)
             echo " onClick='smoking_statusClicked(this)'";
         }
 
-        echo " $disabled />" . xlt('N/A') . "&nbsp;</td>";
+        echo " $disabled /><span>" . xlt('N/A') . "</span></label></td>";
         //
         //Added on 5-jun-2k14 (regarding 'Smoking Status - display SNOMED code description')
         echo "<td class='text' ><div id='smoke_code'></div></td>";
@@ -1857,13 +1864,16 @@ function generate_print_field($frow, $currvalue)
                 echo "<tr>";
             }
             echo "<td width='" . attr($tdpct) . "%'>";
+            echo "<label class='lbf-radio-option'>";
             echo "<input type='radio'";
             if (strlen($currvalue)  > 0 && $option_id == $currvalue) {
                 // Do not use defaults for these printable forms.
                 echo " checked";
             }
 
-            echo ">" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES);
+            echo ">";
+            echo "<span>" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES) . "</span>";
+            echo "</label>";
             echo "</td>";
         }
 
@@ -1934,38 +1944,38 @@ function generate_print_field($frow, $currvalue)
             echo "<td class='bold'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".htmlspecialchars(xl('Status'), ENT_NOQUOTES).":&nbsp;&nbsp;</td>";
         }
 
-        echo "<td><input type='radio' class='form-control'";
+        echo "<td><label class='lbf-radio-option'><input type='radio'";
         if ($restype == "current".$field_id) {
             echo " checked";
         }
 
-        echo "/>".htmlspecialchars(xl('Current'), ENT_NOQUOTES)."&nbsp;</td>";
+        echo "/><span>".htmlspecialchars(xl('Current'), ENT_NOQUOTES)."</span></label></td>";
 
-        echo "<td><input type='radio' class='form-control'";
+        echo "<td><label class='lbf-radio-option'><input type='radio'";
         if ($restype == "current".$field_id) {
             echo " checked";
         }
 
-        echo "/>".htmlspecialchars(xl('Quit'), ENT_NOQUOTES)."&nbsp;</td>";
+        echo "/><span>".htmlspecialchars(xl('Quit'), ENT_NOQUOTES)."</span></label></td>";
 
         echo "<td><input type='text' size='6'" .
         " value='$resdate'" .
         " class='under form-control'" .
         " /></td>";
 
-        echo "<td><input type='radio' class='form-control'";
+        echo "<td><label class='lbf-radio-option'><input type='radio'";
         if ($restype == "current".$field_id) {
             echo " checked";
         }
 
-        echo " />".htmlspecialchars(xl('Never'), ENT_NOQUOTES)."</td>";
+        echo " /><span>".htmlspecialchars(xl('Never'), ENT_NOQUOTES)."</span></label></td>";
 
-        echo "<td><input type='radio' class='form-control'";
+        echo "<td><label class='lbf-radio-option'><input type='radio'";
         if ($restype == "not_applicable".$field_id) {
             echo " checked";
         }
 
-        echo " />".htmlspecialchars(xl('N/A'), ENT_NOQUOTES)."&nbsp;</td>";
+        echo " /><span>".htmlspecialchars(xl('N/A'), ENT_NOQUOTES)."</span></label></td>";
         echo "</tr>";
         echo "</table>";
     } // static text.  read-only, of course.

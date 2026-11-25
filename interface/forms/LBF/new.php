@@ -80,6 +80,26 @@ $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
 $formid = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 
+// Shared LBF UI flags — extend these matchers for additional formnames.
+//
+// REFERENCE chrome: lt_ward_dietary_requirements. Patient Transfer and Referral
+// match that look (header/actions flush is universal via lbf-card-flush).
+// Ward-style forms get mild valign-middle + Add More border kill — NOT the
+// meal-satisfaction nuclear flex vcenter (flex breaks multi-column CPR rows).
+$lbf_ward_style = (stripos($formname, 'ward_dietary') !== false)
+    || (stripos($formname, 'dietary_requirements') !== false)
+    || (stripos($formname, 'patient_transfer') !== false)
+    || (stripos($formname, 'referral') !== false)
+    || (stripos($formname, 'lbtref') !== false);
+// Meal Satisfaction only: nuclear flex vertical center.
+$lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false)
+    || (stripos($formname, 'meal_sat') !== false)
+    || (bool) preg_match('/meal.*satisfac|satisfac.*meal/i', (string) $formname);
+// Suppress Bootstrap/LBF row border-top on Add More / stacked rows.
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
+    || (stripos($formname, 'feeding_regime') !== false)
+    || !empty($lbf_ward_style);
+
 $visitid = intval(empty($_GET['visitid']) ? $encounter : $_GET['visitid']);
 
 // If necessary get the encounter from the forms table entry for this form.
@@ -106,6 +126,47 @@ $formtitle = $lobj['grp_title'];
 $formhistory = 0 + $lobj['grp_repeats'];
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
+}
+// Also match by layout / group title.
+if (!$lbf_ward_style && !empty($formtitle)) {
+    $lbf_ward_style = (stripos($formtitle, 'Ward Dietary') !== false)
+        || (stripos($formtitle, 'Dietary Requirements') !== false)
+        || (stripos($formtitle, 'Patient Transfer') !== false)
+        || (bool) preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer|\breferral\b/i', (string) $formtitle);
+}
+if (!$lbf_ward_style && is_array($grparr)) {
+    foreach ($grparr as $gprop) {
+        if (empty($gprop['grp_title'])) {
+            continue;
+        }
+        if (preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer|referral\s*(information|details)|counter[\s-]*referral/i', (string) $gprop['grp_title'])) {
+            $lbf_ward_style = true;
+            break;
+        }
+    }
+}
+if ($lbf_ward_style) {
+    $lbf_suppress_row_borders = true;
+}
+if (!$lbf_vcenter_fields && !empty($formtitle)) {
+    $lbf_vcenter_fields = (stripos($formtitle, 'Meal Satisfaction') !== false)
+        || (stripos($formtitle, 'MEAL SATISFACTION') !== false)
+        || (bool) preg_match('/meal\s*satisfac/i', (string) $formtitle);
+}
+if (!$lbf_vcenter_fields && is_array($grparr)) {
+    foreach ($grparr as $gprop) {
+        if (empty($gprop['grp_title'])) {
+            continue;
+        }
+        if (preg_match('/meal\s*satisfac/i', (string) $gprop['grp_title'])) {
+            $lbf_vcenter_fields = true;
+            break;
+        }
+    }
+}
+if (!$lbf_suppress_row_borders && !empty($formtitle)) {
+    $lbf_suppress_row_borders = (stripos($formtitle, 'Prescribed Feeding') !== false)
+        || (stripos($formtitle, 'Feeding Regime') !== false);
 }
 if (!empty($lobj['grp_size'])) {
     $FONTSIZE = intval($lobj['grp_size']);
@@ -357,7 +418,675 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             border-color: #999999;
         }
 
+        /*
+         * Match Meal Satisfaction Questionnaire card chrome:
+         * - Title (blue page-header) left edge flush with white card
+         * - Save / Cancel / Back button group right edge flush with white card
+         *
+         * Title + actions sit in Bootstrap .col-xs-12 (15px gutters) while group
+         * fields are bare .row children. Zero those gutters and right-align
+         * actions so both edges match the card (same as lt_meal_satisfaction).
+         */
+        body.body_top > .container.lbf-card-flush,
+        .container.lbf-card-flush {
+            width: 100% !important;
+            max-width: none !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .container.lbf-card-flush > form > .container-responsive > .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+        .lbf-page-header-col,
+        .lbf-actions-col {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            float: none !important;
+            width: 100% !important;
+        }
+        .lbf-page-header-col > .page-header {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            margin-top: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .lbf-page-header-col > .page-header > h3 {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+        /* Buttons: right edge flush with card (Meal Satisfaction look). */
+        .lbf-actions-col {
+            text-align: right !important;
+        }
+        .lbf-actions-col > .btn-group {
+            float: none !important;
+            display: inline-block;
+            text-align: left;
+            margin-right: 0 !important;
+        }
+
+        .lbf-actions-col > hr {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
+        /*
+         * Patient Transfer / Ward Dietary / Referral multi-card reference:
+         * Scoped strictly under body.lbf-ward-style so it has zero effect on
+         * other LBFs while staying 100% available even if activated via JS fallback.
+         * - Soft cool-grey page background (#f4f6fb)
+         * - Transparent header OUTSIDE cards: vertical #2d3691 accent bar + bold
+         *   #0f2c59 title left, flush action buttons right (Save #2d3691,
+         *   Don't Save #dfdfdf, Back #ff4242)
+         * - Each group/section = its OWN white rounded .lbf-group-card (#ffffff,
+         *   1px solid #e2e8f0, 10px radius, 16px gap, inset #e8ecf4 header divider,
+         *   clean bold #111827 heading without collapse checkbox clutter)
+         */
+        html:has(body.lbf-ward-style),
+        html body.lbf-ward-style,
+        html body.lbf-ward-style.body_top {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #f4f6fb !important;
+            background-color: #f4f6fb !important;
+            min-height: 100%;
+        }
+        html body.lbf-ward-style.body_top > .container,
+        html body.lbf-ward-style .container.lbf-card-flush,
+        html body.lbf-ward-style form.lbf-form,
+        html body.lbf-ward-style .container-responsive,
+        html body.lbf-ward-style .container-responsive > .row,
+        html body.lbf-ward-style .col-xs-12 {
+            background: #f4f6fb !important;
+            background-color: #f4f6fb !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .container.lbf-card-flush {
+            padding: 22px 24px 24px 24px !important;
+            max-width: none !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        html body.lbf-ward-style .container-responsive > .row::before,
+        html body.lbf-ward-style .container-responsive > .row::after {
+            display: none !important;
+        }
+        /* Transparent header OUTSIDE cards, flush with left/right card edges */
+        html body.lbf-ward-style .lbf-top-bar {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 12px 16px !important;
+            flex-wrap: wrap !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            color: #0f2c59 !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 0 22px 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border: 0 !important;
+            border-bottom: 0 !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title,
+        html body.lbf-ward-style .lbf-top-bar .page-header {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px 14px !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-bottom: 0 !important;
+            color: #0f2c59 !important;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
+        html body.lbf-ward-style .lbf-top-bar .page-header h3 {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 14px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            color: #0f2c59 !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            line-height: 1.25 !important;
+            letter-spacing: -0.01em !important;
+            background: transparent !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3::before,
+        html body.lbf-ward-style .lbf-top-bar .page-header h3::before {
+            content: '' !important;
+            display: inline-block !important;
+            width: 4px !important;
+            height: 28px !important;
+            border-radius: 2px !important;
+            background-color: #2d3691 !important;
+            flex-shrink: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-meta {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title select,
+        html body.lbf-ward-style .lbf-top-bar .page-header select {
+            color: #1e293b !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 4px 10px !important;
+            height: 32px !important;
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-top-actions {
+            margin-left: auto !important;
+            flex-shrink: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-top-actions .btn-group {
+            float: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            flex-wrap: wrap !important;
+            background: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-default {
+            float: none !important;
+            margin: 0 !important;
+            margin-left: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 35px !important;
+            min-height: 35px !important;
+            padding: 0 16px !important;
+            border-radius: 6px !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #2d3691 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn:hover,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link:hover,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-default:hover {
+            background: #eef2ff !important;
+            background-color: #eef2ff !important;
+            color: #232a73 !important;
+            border-color: #94a3b8 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save {
+            background: #2d3691 !important;
+            background-color: #2d3691 !important;
+            color: #ffffff !important;
+            border: 1px solid #2d3691 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save:hover {
+            background: #232a73 !important;
+            background-color: #232a73 !important;
+            color: #ffffff !important;
+            border-color: #232a73 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-cancel {
+            background: #dfdfdf !important;
+            background-color: #dfdfdf !important;
+            color: #222222 !important;
+            border: 1px solid #d4d4d8 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-cancel:hover {
+            background: #d1d5db !important;
+            background-color: #d1d5db !important;
+            color: #111827 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-back {
+            background: #ff4242 !important;
+            background-color: #ff4242 !important;
+            color: #ffffff !important;
+            border: 1px solid #ff4242 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-back:hover {
+            background: #e53535 !important;
+            background-color: #e53535 !important;
+            color: #ffffff !important;
+            border-color: #e53535 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions select {
+            color: #1e293b !important;
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            height: 32px !important;
+            font-size: 13px !important;
+        }
+        html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated,
+        html body.lbf-ward-style br.lbf-actions-spacer-hidden {
+            display: none !important;
+        }
+        /* Stack of SEPARATE white rounded cards (#f4f6fb gap between each card) */
+        html body.lbf-ward-style .lbf-cards-stack {
+            display: block !important;
+            width: 100% !important;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        html body.lbf-ward-style .lbf-group-card {
+            display: block !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 1px 3px rgba(15, 44, 89, 0.05) !important;
+            padding: 0 20px 20px 20px !important;
+            margin: 0 0 16px 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            float: none !important;
+            clear: both !important;
+        }
+        html body.lbf-ward-style .lbf-group-card.lbf-card-no-header {
+            padding-top: 18px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card:last-child {
+            margin-bottom: 4px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            margin: 0 0 14px 0 !important;
+            padding: 15px 0 13px 0 !important;
+            border: 0 !important;
+            border-bottom: 1px solid #e8ecf4 !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            font-weight: 700 !important;
+            font-size: 14px !important;
+            line-height: 1.3 !important;
+            color: #111827 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header .lbf-group-card-title,
+        html body.lbf-ward-style .lbf-group-card-header > span {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            color: #111827 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header b {
+            color: #111827 !important;
+            font-weight: 700 !important;
+            font-size: 14px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header input[type=checkbox],
+        html body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
+            display: none !important;
+        }
+        html body.lbf-ward-style .lbf-group-card div.section,
+        html body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
+        html body.lbf-ward-style div.section.lbf-group-card-body {
+            border: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+        }
+        html body.lbf-ward-style table.lbfdata {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            margin: 0 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > th,
+        .table > tbody > tr > td.lbf-ward-cell {
+            padding: 8px 10px !important;
+            vertical-align: middle !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+            color: #1e293b !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td:first-child {
+            padding-left: 0 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td:last-child {
+            padding-right: 0 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required {
+            font-weight: 500 !important;
+            color: #334155 !important;
+            white-space: nowrap;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold b,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required b {
+            font-weight: 500 !important;
+            color: #334155 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold:not(:first-child),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required:not(:first-child) {
+            padding-left: 24px !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold:not([colspan]),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required:not([colspan]),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold[colspan="1"],
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required[colspan="1"] {
+            width: 1% !important;
+            padding-right: 14px !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.lbf-group-subtitle {
+            color: #475569 !important;
+            font-size: 12.5px !important;
+            font-weight: 600 !important;
+            padding-top: 2px !important;
+            padding-bottom: 6px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata td table {
+            width: auto !important;
+            max-width: 100% !important;
+            background: transparent !important;
+            margin: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata td table td {
+            padding: 3px 14px 3px 0 !important;
+            vertical-align: middle !important;
+            background: transparent !important;
+            font-size: 13px !important;
+        }
+        /* Unified form controls inside cards (matches Patient Transfer 32px #cbd5e1 inputs) */
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field),
+        html body.lbf-ward-style .lbf-group-card input[type="number"],
+        html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="time"],
+        html body.lbf-ward-style .lbf-group-card input[type="datetime-local"],
+        html body.lbf-ward-style .lbf-group-card input[type="email"],
+        html body.lbf-ward-style .lbf-group-card input[type="tel"],
+        html body.lbf-ward-style .lbf-group-card select,
+        html body.lbf-ward-style .lbf-group-card textarea {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 5px 10px !important;
+            margin: 0 !important;
+            font-size: 13px !important;
+            color: #1e293b !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field),
+        html body.lbf-ward-style .lbf-group-card input[type="number"],
+        html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="time"],
+        html body.lbf-ward-style .lbf-group-card input[type="datetime-local"],
+        html body.lbf-ward-style .lbf-group-card input[type="email"],
+        html body.lbf-ward-style .lbf-group-card input[type="tel"],
+        html body.lbf-ward-style .lbf-group-card select {
+            min-height: 32px !important;
+            height: 32px !important;
+            line-height: 1.35 !important;
+            display: inline-block !important;
+        }
+        html body.lbf-ward-style .lbf-group-card select[multiple] {
+            height: auto !important;
+            min-height: 64px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card .select2-container .select2-selection--single,
+        html body.lbf-ward-style .lbf-group-card .select2-container .select2-choice {
+            min-height: 32px !important;
+            height: 32px !important;
+            line-height: 30px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > select:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="text"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="date"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="time"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > .select2-container {
+            width: 100% !important;
+        }
+        html body.lbf-ward-style .lbf-group-card textarea {
+            min-height: 76px !important;
+            padding: 8px 10px !important;
+            line-height: 1.4 !important;
+            resize: vertical;
+            display: block !important;
+            width: 100% !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field):focus,
+        html body.lbf-ward-style .lbf-group-card input[type="date"]:focus,
+        html body.lbf-ward-style .lbf-group-card input[type="time"]:focus,
+        html body.lbf-ward-style .lbf-group-card select:focus,
+        html body.lbf-ward-style .lbf-group-card textarea:focus {
+            border-color: #2d3691 !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(45, 54, 145, 0.14) !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="radio"],
+        html body.lbf-ward-style .lbf-group-card input[type="checkbox"] {
+            margin: 0 !important;
+            vertical-align: middle !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card label.lbf-radio-option,
+        html body.lbf-ward-style .lbf-group-card label.lbf-checkbox-option {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            margin: 0 !important;
+            font-weight: 400 !important;
+            color: #1e293b !important;
+            white-space: nowrap;
+        }
+        html body.lbf-ward-style .lbf-group-card button:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning),
+        html body.lbf-ward-style .lbf-group-card input[type="button"]:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning) {
+            background: #f8fafc !important;
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            min-height: 32px !important;
+            padding: 5px 12px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            cursor: pointer;
+        }
+        html body.lbf-ward-style .lbf-group-card button:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning):hover,
+        html body.lbf-ward-style .lbf-group-card input[type="button"]:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning):hover {
+            background: #eef2ff !important;
+            border-color: #2d3691 !important;
+            color: #2d3691 !important;
+        }
+        /* Kill legacy blue section box if still present outside cards */
+        html body.lbf-ward-style div.section:not(.lbf-group-card-body) {
+            border: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+        }
+
+        <?php if (!empty($lbf_vcenter_fields)) { ?>
+        /*
+         * Meal Satisfaction nuclear flex vertical center (NOT used for ward dietary /
+         * patient transfer / referral — those use lbf-ward-style mild valign instead).
+         * Beats Bootstrap `.table td { vertical-align: top }` and LBF valign=top.
+         */
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata,
+        body.lbf-vcenter-fields table.lbfdata,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata {
+            border-collapse: separate !important;
+        }
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata > tbody > tr,
+        body.lbf-vcenter-fields table.lbfdata > tbody > tr,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr {
+            display: flex !important;
+            align-items: center !important;
+            width: 100%;
+        }
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata > tbody > tr > td,
+        body.lbf-vcenter-fields form.lbf-form table.lbfdata td,
+        body.lbf-vcenter-fields table.lbfdata > tbody > tr > td,
+        body.lbf-vcenter-fields table.lbfdata td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr > td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td,
+        .table > tbody > tr > td.lbf-vcenter-cell {
+            vertical-align: middle !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap;
+            float: none !important;
+        }
+        body.lbf-vcenter-fields table.lbfdata td table,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table {
+            width: auto !important;
+            margin: 0 !important;
+        }
+        body.lbf-vcenter-fields table.lbfdata td table td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table td {
+            vertical-align: middle !important;
+            display: table-cell !important;
+            align-items: unset;
+            flex-wrap: unset;
+        }
+        body.lbf-vcenter-fields table.lbfdata input,
+        body.lbf-vcenter-fields table.lbfdata select,
+        body.lbf-vcenter-fields table.lbfdata textarea,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata input,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata select,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata textarea {
+            vertical-align: middle !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        <?php } ?>
+
+        <?php if (!empty($lbf_suppress_row_borders)) { ?>
+        /*
+         * Shared LBF row-border kill (feeding regime, ward dietary / patient transfer / referral Add More, …).
+         * Wins over Bootstrap: .table > tbody > tr > td { border-top: 1px solid #ddd; }
+         */
+        html body form.lbf-form table,
+        html body form.lbf-form table.lbfdata,
+        html body form.lbf-form table.lbfdata-no-row-borders,
+        html body form.lbf-form table.table,
+        html body form.lbf-form .table,
+        html body .section table,
+        html body table.lbfdata,
+        html body table.lbfdata-no-row-borders {
+            border-collapse: collapse !important;
+            border: 0 !important;
+        }
+        html body form.lbf-form table tr,
+        html body form.lbf-form table td,
+        html body form.lbf-form table th,
+        html body form.lbf-form .table > tbody > tr > td,
+        html body form.lbf-form .table > tbody > tr > th,
+        html body .section table tr,
+        html body .section table td,
+        html body .section table th,
+        html body table.lbfdata tr,
+        html body table.lbfdata td,
+        html body table.lbfdata th,
+        html body table.lbfdata > tbody > tr > td,
+        html body table.lbfdata-no-row-borders tr,
+        html body table.lbfdata-no-row-borders td,
+        html body table.lbfdata-no-row-borders th,
+        html body table.lbfdata-no-row-borders > tbody > tr > td,
+        html body tr.RS,
+        html body tr.RO,
+        html body td.RS,
+        html body td.RO {
+            border: 0 !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        <?php } ?>
+
     </style>
+
+    <?php if (!empty($lbf_vcenter_fields)) { ?>
+    <style id="lbf-nuke-vcenter">
+        .lbf-vcenter-fields table.lbfdata > tbody > tr,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr {
+            display: flex !important;
+            align-items: center !important;
+        }
+        .lbf-vcenter-fields table.lbfdata > tbody > tr > td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata > tbody > tr > td {
+            vertical-align: middle !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .lbf-vcenter-fields table.lbfdata td table td,
+        form.lbf-form[data-lbf-vcenter='1'] table.lbfdata td table td {
+            display: table-cell !important;
+            vertical-align: middle !important;
+        }
+    </style>
+    <?php } ?>
+    <?php if (!empty($lbf_suppress_row_borders)) { ?>
+    <style id="lbf-nuke-row-borders">
+        .table > tbody > tr > td,
+        .table > tbody > tr > th,
+        table.table > tbody > tr > td,
+        table.lbfdata > tbody > tr > td,
+        table.lbfdata > tbody > tr > th,
+        table.lbfdata-no-row-borders > tbody > tr > td,
+        table.lbfdata-no-row-borders > tbody > tr > th,
+        form.lbf-form table > tbody > tr > td,
+        form.lbf-form table > tbody > tr > th,
+        form.lbf-form .table > tbody > tr > td,
+        .section table > tbody > tr > td,
+        .table-bordered > tbody > tr > td {
+            border: 0 !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+        }
+    </style>
+    <?php } ?>
 
     <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
 
@@ -380,6 +1109,688 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         $(document).ready(function () {
+
+            // Ward Dietary multi-card layout — Ward Dietary, Patient Transfer, Referral.
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_ward_style) ? 'true' : 'false'; ?>;
+                var SECTION_TITLE_RE = /^(WARD\s*INFORMATION|PATIENT\s*DIETARY\s*LIST|TRANSFER\s*INFORMATION|TRANSFER\s*DETAILS|CLINICAL\s*STATUS|CLINICAL\s*INFORMATION|CLINICAL\s*DETAILS|CLINICAL\s*SUMMARY|CLINICAL\s*NOTES|CLINICAL\s*HISTORY|PATIENT\s*INFORMATION|PATIENT\s*DETAILS|PATIENT\s*CONDITION|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|REFERRAL\s*SUMMARY|REFERRAL\s*SOURCE|REFERRAL\s*TYPE|REFERRAL\s*REASON|REASON\s*FOR\s*REFERRAL|REFERRING\s*PROVIDER|REFERRING\s*FACILITY|REFERRING\s*DETAILS|REFERRED\s*BY|REFERRED\s*TO|RECEIVING\s*PROVIDER|RECEIVING\s*FACILITY|RECEIVING\s*DEPARTMENT|SPECIALIST\s*DETAILS|PROVIDER\s*INFORMATION|PROVIDER\s*DETAILS|COUNTER[\s-]*REFERRAL|FOLLOW[\s-]*UP(\s*INFORMATION|\s*DETAILS)?|ASSESSMENT|DIAGNOSIS|PROVISIONAL\s*DIAGNOSIS|TREATMENT\s*SUMMARY|MEDICATIONS|INVESTIGATIONS|VITALS|RECOMMENDATIONS|APPOINTMENT\s*DETAILS|ADDITIONAL\s*INFORMATION|ADDITIONAL\s*NOTES|ATTACHMENTS(\s*(&|AND)\s*DOCUMENTS)?|DOCUMENTS|AUTHORIZATION|SIGNATURES)$/i;
+
+                function looksLikeWardStyle() {
+                    if (phpFlag) { return true; }
+                    var href = String(window.location.href || '');
+                    if (/[?&]formname=[^&#]*(ward_dietary|dietary_requirements|patient_transfer|referral|lbtref)/i.test(href)) {
+                        return true;
+                    }
+                    if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral|lbtref/i.test(href)) {
+                        return true;
+                    }
+                    var h3 = document.querySelector('.page-header h1, .page-header h2, .page-header h3, .lbf-top-title h3');
+                    if (h3) {
+                        var h3Txt = (h3.innerText || h3.textContent || '').replace(/\s+/g, ' ').trim();
+                        var titlePart = h3Txt.split(/\s+for\s+/i)[0] || h3Txt;
+                        if (/ward\s*dietary|dietary\s*requirements|patient\s*transfer|\breferral\b/i.test(titlePart)) {
+                            return true;
+                        }
+                    }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|REFERRAL\s*LETTER|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|REFERRING\s*INSTITUTION|RECEIVING\s*INSTITUTION|COUNTER[\s-]*REFERRAL/i.test(txt);
+                }
+
+                function ensureWardHtmlBg() {
+                    if (document.documentElement) {
+                        document.documentElement.style.setProperty('background-color', '#f4f6fb', 'important');
+                        document.documentElement.style.setProperty('margin', '0', 'important');
+                        document.documentElement.style.setProperty('padding', '0', 'important');
+                    }
+                }
+
+                function titleText(el) {
+                    if (!el) { return ''; }
+                    var t = (el.innerText || el.textContent || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+                    // Strip leading checkbox artifacts
+                    return t.replace(/^[\u2610\u2611]\s*/, '').trim();
+                }
+
+                function cleanHeadingLabel(t) {
+                    return String(t || '').replace(/:+\s*$/, '').trim();
+                }
+
+                function isSectionTitleNode(el) {
+                    if (!el || el.nodeType !== 1) { return false; }
+                    if (el.closest && el.closest('.lbf-top-bar')) { return false; }
+                    if (el.closest && el.closest('.lbf-actions-col')) { return false; }
+                    var t = cleanHeadingLabel(titleText(el));
+                    if (!t || t.length > 80) { return false; }
+                    if (SECTION_TITLE_RE.test(t)) { return true; }
+                    // Group title span with checkbox + bold
+                    if (/SPAN/i.test(el.tagName) && el.querySelector && el.querySelector('input[type=checkbox]') && el.querySelector('b')) {
+                        return true;
+                    }
+                    // Subtitle row cell (blue bold colspan)
+                    if (/TD|TH/i.test(el.tagName)) {
+                        var st = (el.getAttribute('style') || '') + ' ' + (el.className || '');
+                        if (/0000ff|color:\s*blue|bold/i.test(st) && SECTION_TITLE_RE.test(t)) { return true; }
+                        if (el.classList && el.classList.contains('bold') && SECTION_TITLE_RE.test(t)) { return true; }
+                    }
+                    return false;
+                }
+
+                function isTableSectionHeadingRow(tr) {
+                    if (!tr || tr.nodeType !== 1) { return false; }
+                    if (tr.querySelector && tr.querySelector('input, select, textarea, button, a, canvas')) {
+                        return false;
+                    }
+                    var whole = cleanHeadingLabel(titleText(tr));
+                    if (!whole || whole.length < 2 || whole.length > 80) { return false; }
+                    var cells = Array.prototype.slice.call(tr.cells || []);
+                    var nonEmpty = [];
+                    for (var i = 0; i < cells.length; i++) {
+                        if (titleText(cells[i])) { nonEmpty.push(cells[i]); }
+                    }
+                    if (nonEmpty.length !== 1) { return false; }
+                    var cell = nonEmpty[0];
+                    if (isSectionTitleNode(cell) || SECTION_TITLE_RE.test(whole)) { return true; }
+                    // Do not split on instructional static sentences or questions.
+                    if (whole.length > 65 || /[.?]$/.test(whole)) { return false; }
+                    if (cell.querySelector && cell.querySelector('h1, h2, h3, h4, h5, h6')) {
+                        return true;
+                    }
+                    var rowType = (tr.getAttribute('data-lbf-row-type') || '').toLowerCase();
+                    var colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    var spansRow = (colspan >= 2) || (cells.length === 1);
+                    var st = (cell.getAttribute('style') || '') + ' ' + (cell.className || '');
+                    // Descriptive group subtitle (grp_subtitle) stays inside its card unless it matches a known section title.
+                    if (cell.classList && cell.classList.contains('lbf-group-subtitle')) {
+                        return false;
+                    }
+                    var isBlueSubtitle = /0000ff|color:\s*blue/i.test(st);
+                    var isBoldHeading = !!(
+                        (cell.classList && cell.classList.contains('bold'))
+                        || (cell.querySelector && cell.querySelector('b, strong'))
+                        || /font-weight\s*:\s*(bold|[6-9]00)/i.test(st)
+                    );
+                    var isAllCapsHeading = (whole.length >= 4 && whole === whole.toUpperCase() && /[A-Z]/.test(whole));
+                    if (rowType === 'sp' && (isBoldHeading || isBlueSubtitle || isAllCapsHeading)) {
+                        return true;
+                    }
+                    if (rowType === 'static' && (isBoldHeading || isBlueSubtitle || isAllCapsHeading)) {
+                        return true;
+                    }
+                    if (spansRow && (isBlueSubtitle || isBoldHeading)) {
+                        return true;
+                    }
+                    return false;
+                }
+
+                function isEmptySpacerRow(tr) {
+                    if (!tr || tr.nodeType !== 1) { return true; }
+                    if (tr.querySelector && tr.querySelector('input, select, textarea, button, img, canvas')) {
+                        return false;
+                    }
+                    return titleText(tr) === '';
+                }
+
+                function makeCard(titleNode, bodyNodes) {
+                    var card = document.createElement('div');
+                    card.className = titleNode ? 'lbf-group-card' : 'lbf-group-card lbf-card-no-header';
+                    if (titleNode) {
+                        var header = document.createElement('div');
+                        header.className = 'lbf-group-card-header';
+                        if (typeof titleNode === 'string') {
+                            var hs = document.createElement('b');
+                            hs.textContent = cleanHeadingLabel(titleNode);
+                            header.appendChild(hs);
+                        } else if (titleNode.tagName && /TR|TD|TH/i.test(titleNode.tagName)) {
+                            var h = document.createElement('b');
+                            h.textContent = cleanHeadingLabel(titleText(titleNode));
+                            header.appendChild(h);
+                        } else {
+                            if (titleNode.classList && !titleNode.classList.contains('lbf-group-card-title')) {
+                                titleNode.classList.add('lbf-group-card-title');
+                            }
+                            header.appendChild(titleNode);
+                        }
+                        card.appendChild(header);
+                    }
+                    var body = document.createElement('div');
+                    body.className = 'lbf-group-card-body section';
+                    body.style.display = 'block';
+                    body.setAttribute('data-lbf-ward-opened', '1');
+                    for (var i = 0; i < bodyNodes.length; i++) {
+                        if (bodyNodes[i]) { body.appendChild(bodyNodes[i]); }
+                    }
+                    card.appendChild(body);
+                    return card;
+                }
+
+                function ensureCardsStack(form) {
+                    var stack = form.querySelector('.lbf-cards-stack');
+                    if (stack) { return stack; }
+                    stack = document.createElement('div');
+                    stack.className = 'lbf-cards-stack';
+                    var topBar = form.querySelector('.lbf-top-bar');
+                    var row = form.querySelector('.container-responsive > .row') || form;
+                    if (topBar && topBar.parentNode) {
+                        if (topBar.nextSibling) {
+                            topBar.parentNode.insertBefore(stack, topBar.nextSibling);
+                        } else {
+                            topBar.parentNode.appendChild(stack);
+                        }
+                    } else {
+                        row.appendChild(stack);
+                    }
+                    return stack;
+                }
+
+                function splitTableBySectionTitles(table, existingHeaderTitle) {
+                    var rows = Array.prototype.slice.call(table.rows || []);
+                    var breaks = [];
+                    for (var r = 0; r < rows.length; r++) {
+                        if (isTableSectionHeadingRow(rows[r])) {
+                            breaks.push(r);
+                        }
+                    }
+                    if (breaks.length === 0) { return null; }
+                    var leadRows = [];
+                    for (var p = 0; p < breaks[0]; p++) {
+                        if (!isEmptySpacerRow(rows[p])) {
+                            leadRows.push(rows[p]);
+                        }
+                    }
+                    // Split when there are 2+ headings, OR 1 heading with non-empty leading rows before it,
+                    // OR 1 leading heading on row 0 inside an untitled card/table.
+                    var shouldSplit = (breaks.length >= 2)
+                        || (breaks.length === 1 && leadRows.length > 0)
+                        || (breaks.length === 1 && leadRows.length === 0 && !existingHeaderTitle);
+                    if (!shouldSplit) { return null; }
+
+                    var cards = [];
+                    if (leadRows.length > 0) {
+                        var leadTable = table.cloneNode(false);
+                        var leadTb = document.createElement('tbody');
+                        leadTable.appendChild(leadTb);
+                        leadTable.className = table.className;
+                        for (var lp = 0; lp < leadRows.length; lp++) {
+                            leadTb.appendChild(leadRows[lp]);
+                        }
+                        cards.push(makeCard(existingHeaderTitle || null, [leadTable]));
+                    }
+                    for (var b = 0; b < breaks.length; b++) {
+                        var start = breaks[b];
+                        var end = (b + 1 < breaks.length) ? breaks[b + 1] : rows.length;
+                        var titleRow = rows[start];
+                        var newTable = table.cloneNode(false);
+                        var tb = document.createElement('tbody');
+                        newTable.appendChild(tb);
+                        newTable.className = table.className;
+                        var firstContentSeen = false;
+                        for (var i = start + 1; i < end; i++) {
+                            if (!firstContentSeen && isEmptySpacerRow(rows[i])) {
+                                continue;
+                            }
+                            firstContentSeen = true;
+                            tb.appendChild(rows[i]);
+                        }
+                        cards.push(makeCard(titleRow, [newTable]));
+                    }
+                    return cards;
+                }
+
+                function wrapExistingGroupCards(form, stack) {
+                    var existing = Array.prototype.slice.call(form.querySelectorAll('.lbf-group-card'));
+                    for (var i = 0; i < existing.length; i++) {
+                        if (existing[i].parentNode !== stack) {
+                            stack.appendChild(existing[i]);
+                        }
+                    }
+                    return existing.length;
+                }
+
+                function wrapSectionDivs(form, stack) {
+                    var sections = Array.prototype.slice.call(form.querySelectorAll('div.section'));
+                    var count = 0;
+                    for (var i = 0; i < sections.length; i++) {
+                        var sec = sections[i];
+                        if (sec.closest && sec.closest('.lbf-group-card')) { continue; }
+                        var prev = sec.previousSibling;
+                        while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                            prev = prev.previousSibling;
+                        }
+                        while (prev && prev.nodeType === 1 && /^(BR|HR)$/i.test(prev.tagName || '')) {
+                            var dead = prev;
+                            prev = prev.previousSibling;
+                            if (dead.parentNode) { dead.parentNode.removeChild(dead); }
+                            while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                                prev = prev.previousSibling;
+                            }
+                        }
+                        var titleEl = (prev && prev.nodeType === 1 && isSectionTitleNode(prev)) ? prev : null;
+                        var card = makeCard(titleEl, [sec]);
+                        sec.classList.add('lbf-group-card-body');
+                        stack.appendChild(card);
+                        count++;
+                    }
+                    return count;
+                }
+
+                function rebuildFromSectionTitles(form, stack) {
+                    // Split any table.lbfdata that contains internal section headings,
+                    // inserting replacement cards in-place to preserve document order.
+                    var tables = Array.prototype.slice.call(form.querySelectorAll('table.lbfdata'));
+                    var built = 0;
+                    for (var t = 0; t < tables.length; t++) {
+                        var table = tables[t];
+                        if (!table.parentNode) { continue; }
+                        var host = table.closest ? table.closest('.lbf-group-card') : null;
+                        var existingHeaderText = '';
+                        if (host) {
+                            var existingHeader = host.querySelector('.lbf-group-card-header');
+                            if (existingHeader) {
+                                existingHeaderText = titleText(existingHeader);
+                            }
+                        }
+                        var cards = splitTableBySectionTitles(table, existingHeaderText);
+                        if (!cards) { continue; }
+                        if (host && host.parentNode) {
+                            for (var c = 0; c < cards.length; c++) {
+                                host.parentNode.insertBefore(cards[c], host);
+                                built++;
+                            }
+                            host.parentNode.removeChild(host);
+                        } else {
+                            for (var c2 = 0; c2 < cards.length; c2++) {
+                                stack.appendChild(cards[c2]);
+                                built++;
+                            }
+                            if (table.parentNode) {
+                                table.parentNode.removeChild(table);
+                            }
+                        }
+                    }
+                    return built;
+                }
+
+                function ensureFallbackCard(form, stack) {
+                    // Wrap any bare table.lbfdata outside cards into its own card.
+                    var tables = Array.prototype.slice.call(form.querySelectorAll('table.lbfdata'));
+                    for (var t = 0; t < tables.length; t++) {
+                        var table = tables[t];
+                        if (table.closest && table.closest('.lbf-group-card')) { continue; }
+                        var titleNode = null;
+                        if (table.rows && table.rows.length > 1 && isTableSectionHeadingRow(table.rows[0])) {
+                            titleNode = table.rows[0];
+                            table.deleteRow(0);
+                            while (table.rows.length > 0 && isEmptySpacerRow(table.rows[0])) {
+                                table.deleteRow(0);
+                            }
+                        } else if (table.rows && table.rows.length > 0) {
+                            var tableTxt = titleText(table);
+                            if (/Referring\s*Institution|Receiving\s*Institution|Referring\s*Clinician|Referral\s*Date|Referral\s*Urgency/i.test(tableTxt)) {
+                                titleNode = 'Referral Information';
+                            }
+                        }
+                        stack.appendChild(makeCard(titleNode, [table]));
+                    }
+                }
+
+                function pruneEmptyCards(stack) {
+                    var cards = Array.prototype.slice.call(stack.querySelectorAll('.lbf-group-card'));
+                    for (var i = 0; i < cards.length; i++) {
+                        var body = cards[i].querySelector('.lbf-group-card-body');
+                        if (!body) { continue; }
+                        var hasControls = body.querySelector('input, select, textarea, button, img, canvas, a');
+                        if (!hasControls && !titleText(body)) {
+                            if (cards[i].parentNode) {
+                                cards[i].parentNode.removeChild(cards[i]);
+                            }
+                        } else if (!cards[i].querySelector('.lbf-group-card-header')) {
+                            cards[i].classList.add('lbf-card-no-header');
+                        }
+                    }
+                }
+
+                function normalizeTopBarTitle(topBar) {
+                    var titleBox = topBar.querySelector('.lbf-top-title, .page-header');
+                    if (!titleBox) { return; }
+                    titleBox.classList.add('lbf-top-title');
+                    // Wrap any loose Provider / Case text + select nodes into .lbf-top-meta for clean inline layout,
+                    // without sweeping any action button groups into the title metadata.
+                    if (!titleBox.querySelector('.lbf-top-meta')) {
+                        var h3 = titleBox.querySelector('h1, h2, h3');
+                        var extras = [];
+                        var node = h3 ? h3.nextSibling : null;
+                        while (node) {
+                            var next = node.nextSibling;
+                            if (node.nodeType === 1) {
+                                var isActionEl = (node.classList && (node.classList.contains('btn-group') || node.classList.contains('lbf-top-actions')))
+                                    || (node.querySelector && node.querySelector('.btn-save, .btn-cancel, .btn-back'));
+                                if (!isActionEl) {
+                                    extras.push(node);
+                                }
+                            } else if (node.nodeType === 3 && String(node.textContent || '').replace(/\u00a0/g, ' ').trim() !== '') {
+                                extras.push(node);
+                            } else if (node.nodeType === 3) {
+                                titleBox.removeChild(node);
+                            }
+                            node = next;
+                        }
+                        if (extras.length > 0) {
+                            var meta = document.createElement('span');
+                            meta.className = 'lbf-top-meta';
+                            for (var i = 0; i < extras.length; i++) {
+                                if (extras[i].nodeType === 3) {
+                                    extras[i].textContent = String(extras[i].textContent || '').replace(/\u00a0/g, ' ').trim();
+                                }
+                                meta.appendChild(extras[i]);
+                            }
+                            titleBox.appendChild(meta);
+                        }
+                    }
+                }
+
+                function moveActionsToTopBar(form) {
+                    var topBar = form.querySelector('.lbf-top-bar') || document.querySelector('.lbf-top-bar');
+                    if (!topBar) { return; }
+                    normalizeTopBarTitle(topBar);
+                    var actionsSlot = topBar.querySelector('.lbf-top-actions');
+                    if (!actionsSlot) {
+                        actionsSlot = document.createElement('div');
+                        actionsSlot.className = 'lbf-top-actions';
+                        actionsSlot.setAttribute('aria-label', 'Form actions');
+                        topBar.appendChild(actionsSlot);
+                    }
+                    var actionsCol = form.querySelector('.lbf-actions-col') || document.querySelector('.lbf-actions-col');
+                    var btnGroup = actionsCol ? actionsCol.querySelector('.btn-group') : null;
+                    if (!btnGroup) {
+                        var titleBox = topBar.querySelector('.lbf-top-title, .page-header');
+                        if (titleBox) {
+                            btnGroup = titleBox.querySelector('.btn-group');
+                        }
+                    }
+                    if (!btnGroup) { return; }
+                    // Strip raw &nbsp; / whitespace text nodes inside .btn-group so flex gap is uniform.
+                    var child = btnGroup.firstChild;
+                    while (child) {
+                        var nextChild = child.nextSibling;
+                        if (child.nodeType === 3 && !String(child.textContent || '').replace(/\u00a0/g, ' ').trim()) {
+                            btnGroup.removeChild(child);
+                        }
+                        child = nextChild;
+                    }
+                    if (!actionsSlot.contains(btnGroup)) {
+                        actionsSlot.appendChild(btnGroup);
+                    }
+                    if (actionsCol) {
+                        actionsCol.classList.add('lbf-actions-relocated');
+                        // Hide stray <br> immediately preceding the relocated actions row.
+                        var prev = actionsCol.previousSibling;
+                        while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                            prev = prev.previousSibling;
+                        }
+                        if (prev && prev.nodeType === 1 && /^BR$/i.test(prev.tagName || '')) {
+                            prev.classList.add('lbf-actions-spacer-hidden');
+                        }
+                    }
+                    var cancelBtns = actionsSlot.querySelectorAll('.btn-cancel');
+                    for (var b = 0; b < cancelBtns.length; b++) {
+                        if (/cancel/i.test(cancelBtns[b].textContent || '')) {
+                            cancelBtns[b].textContent = cancelBtns[b].textContent.replace(/Cancel/ig, "Don't Save");
+                        }
+                    }
+                }
+
+                function forceSectionsOpen(form) {
+                    var cards = form.querySelectorAll('.lbf-group-card');
+                    for (var i = 0; i < cards.length; i++) {
+                        var sec = cards[i].querySelector('.section, .lbf-group-card-body');
+                        if (sec && !sec.getAttribute('data-lbf-ward-opened')) {
+                            sec.style.display = 'block';
+                            sec.setAttribute('data-lbf-ward-opened', '1');
+                            var cb = cards[i].querySelector('.lbf-group-card-header input[type=checkbox]');
+                            if (cb) { cb.checked = true; }
+                        }
+                    }
+                }
+
+                function styleWardCells(root) {
+                    var scope = root || document;
+                    var cells = scope.querySelectorAll('table.lbfdata td, table.lbfdata th');
+                    for (var c = 0; c < cells.length; c++) {
+                        cells[c].classList.add('lbf-ward-cell');
+                        cells[c].setAttribute('valign', 'middle');
+                        cells[c].style.setProperty('vertical-align', 'middle', 'important');
+                    }
+                }
+
+                function applyWardStyle() {
+                    if (!looksLikeWardStyle()) { return; }
+                    ensureWardHtmlBg();
+                    if (document.body) {
+                        document.body.classList.add('lbf-ward-style');
+                        document.body.setAttribute('data-lbf-ward-style', '1');
+                    }
+                    var forms = document.querySelectorAll('form.lbf-form, form');
+                    for (var f = 0; f < forms.length; f++) {
+                        var form = forms[f];
+                        form.setAttribute('data-lbf-ward-style', '1');
+                        if (form.classList) { form.classList.add('lbf-form'); }
+
+                        // Promote page-header column to top bar if JS fallback activated ward style.
+                        var headerCol = form.querySelector('.lbf-page-header-col');
+                        if (headerCol && !headerCol.classList.contains('lbf-top-bar')) {
+                            headerCol.classList.add('lbf-top-bar');
+                        }
+
+                        moveActionsToTopBar(form);
+
+                        var stack = ensureCardsStack(form);
+                        wrapExistingGroupCards(form, stack);
+                        wrapSectionDivs(form, stack);
+                        rebuildFromSectionTitles(form, stack);
+                        ensureFallbackCard(form, stack);
+                        pruneEmptyCards(stack);
+                        forceSectionsOpen(form);
+                    }
+                    styleWardCells(document);
+                }
+
+                applyWardStyle();
+                setTimeout(applyWardStyle, 0);
+                setTimeout(applyWardStyle, 50);
+                setTimeout(applyWardStyle, 200);
+            })();
+
+            // Meal Satisfaction nuclear flex vertical center (meal only).
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_vcenter_fields) ? 'true' : 'false'; ?>;
+                function looksLikeVcenterForm() {
+                    if (phpFlag) { return true; }
+                    var href = String(window.location.href || '');
+                    if (/meal_satisfaction|meal_sat|meal.*satisfac/i.test(href)) { return true; }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    if (/MEAL\s*SATISFACTION|Did you need assistance with eating|What portion of your meal/i.test(txt)) {
+                        return true;
+                    }
+                    return false;
+                }
+                function ensureCss() {
+                    if (document.getElementById('lbf-nuke-vcenter-js')) { return; }
+                    var s = document.createElement('style');
+                    s.id = 'lbf-nuke-vcenter-js';
+                    s.type = 'text/css';
+                    s.appendChild(document.createTextNode(
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata > tbody > tr,' +
+                        'body.lbf-vcenter-fields table.lbfdata > tbody > tr{' +
+                        'display:flex!important;align-items:center!important;}' +
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata > tbody > tr > td,' +
+                        'body.lbf-vcenter-fields table.lbfdata > tbody > tr > td{' +
+                        'vertical-align:middle!important;display:flex!important;align-items:center!important;flex-wrap:wrap;}' +
+                        'form.lbf-form[data-lbf-vcenter="1"] table.lbfdata td table td,' +
+                        'body.lbf-vcenter-fields table.lbfdata td table td{' +
+                        'display:table-cell!important;vertical-align:middle!important;}'
+                    ));
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                function nukeVcenter() {
+                    if (!looksLikeVcenterForm()) { return; }
+                    ensureCss();
+                    if (document.body) {
+                        document.body.classList.add('lbf-vcenter-fields');
+                        document.body.setAttribute('data-lbf-vcenter', '1');
+                    }
+                    var forms = document.querySelectorAll('form.lbf-form, form');
+                    for (var f = 0; f < forms.length; f++) {
+                        forms[f].setAttribute('data-lbf-vcenter', '1');
+                        if (forms[f].classList) { forms[f].classList.add('lbf-form'); }
+                    }
+                    var rows = document.querySelectorAll('table.lbfdata > tbody > tr, table.lbfdata tr');
+                    for (var r = 0; r < rows.length; r++) {
+                        var tr = rows[r];
+                        tr.style.setProperty('display', 'flex', 'important');
+                        tr.style.setProperty('align-items', 'center', 'important');
+                        var cells = tr.children;
+                        for (var c = 0; c < cells.length; c++) {
+                            var td = cells[c];
+                            if (!td || !/TD|TH/i.test(td.tagName || '')) { continue; }
+                            td.classList.add('lbf-vcenter-cell');
+                            td.setAttribute('valign', 'middle');
+                            td.style.setProperty('vertical-align', 'middle', 'important');
+                            td.style.setProperty('display', 'flex', 'important');
+                            td.style.setProperty('align-items', 'center', 'important');
+                            td.style.setProperty('flex-wrap', 'wrap', 'important');
+                            var nested = td.querySelectorAll('table td');
+                            for (var n = 0; n < nested.length; n++) {
+                                nested[n].style.setProperty('display', 'table-cell', 'important');
+                                nested[n].style.setProperty('vertical-align', 'middle', 'important');
+                            }
+                        }
+                    }
+                }
+                nukeVcenter();
+                setTimeout(nukeVcenter, 0);
+                setTimeout(nukeVcenter, 100);
+            })();
+
+            // Shared LBF row-border kill (feeding regime / ward dietary / patient transfer / referral Add More / …).
+            (function () {
+                var phpFlag = <?php echo !empty($lbf_suppress_row_borders) ? 'true' : 'false'; ?>;
+                function looksLikeNoRowBorders() {
+                    if (phpFlag) { return true; }
+                    if (document.body && document.body.classList && document.body.classList.contains('lbf-ward-style')) {
+                        return true;
+                    }
+                    var href = String(window.location.href || '');
+                    if (/[?&]formname=[^&#]*(prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|referral|lbtref)/i.test(href)) { return true; }
+                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral|lbtref/i.test(href)) { return true; }
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    var hasRoute = /Route/i.test(txt);
+                    var hasVolume = /Volume/i.test(txt);
+                    var hasEnergy = /Energy/i.test(txt);
+                    var hasProtein = /Protein/i.test(txt);
+                    return hasRoute && hasVolume && (hasEnergy || hasProtein);
+                }
+                function nukeEl(el) {
+                    if (!el || el.nodeType !== 1) { return; }
+                    el.removeAttribute('border');
+                    if (el.classList) {
+                        el.classList.remove('RS', 'RO');
+                    }
+                    try {
+                        el.style.setProperty('border', '0', 'important');
+                        el.style.setProperty('border-top', '0', 'important');
+                        el.style.setProperty('border-bottom', '0', 'important');
+                        el.style.setProperty('box-shadow', 'none', 'important');
+                    } catch (e) {
+                        el.style.borderTop = '0';
+                        el.style.borderBottom = '0';
+                    }
+                }
+                function ensureNukeCss() {
+                    if (document.getElementById('lbf-nuke-row-borders-js')) { return; }
+                    var s = document.createElement('style');
+                    s.id = 'lbf-nuke-row-borders-js';
+                    s.type = 'text/css';
+                    s.appendChild(document.createTextNode(
+                        '.table > tbody > tr > td,.table > tbody > tr > th,' +
+                        'table.lbfdata > tbody > tr > td,table.lbfdata > tbody > tr > th,' +
+                        'form.lbf-form table > tbody > tr > td,form.lbf-form table > tbody > tr > th,' +
+                        '.section table > tbody > tr > td,.section table > tbody > tr > th{' +
+                        'border:0!important;border-top:0!important;border-bottom:0!important;}'
+                    ));
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                function stripRowBorders(root) {
+                    if (!looksLikeNoRowBorders()) { return; }
+                    ensureNukeCss();
+                    var scope = root || document;
+                    var tables = [];
+                    if (scope.nodeType === 1 && /TABLE/i.test(scope.tagName || '')) {
+                        tables.push(scope);
+                    }
+                    var found = (scope.querySelectorAll)
+                        ? scope.querySelectorAll('form.lbf-form table, .section table, table.lbfdata, table.lbfdata-no-row-borders, table.table')
+                        : [];
+                    for (var i = 0; i < found.length; i++) { tables.push(found[i]); }
+                    for (var t = 0; t < tables.length; t++) {
+                        nukeEl(tables[t]);
+                        var cells = tables[t].querySelectorAll('tr, td, th');
+                        for (var c = 0; c < cells.length; c++) { nukeEl(cells[c]); }
+                    }
+                }
+                function afterClone(node) {
+                    stripRowBorders(node || document);
+                    var isWard = document.body && document.body.classList && document.body.classList.contains('lbf-ward-style');
+                    var rows = document.querySelectorAll('form.lbf-form tr, .section table tr, table.lbfdata tr');
+                    for (var r = 0; r < rows.length; r++) {
+                        nukeEl(rows[r]);
+                        var tds = rows[r].cells || rows[r].querySelectorAll('td, th');
+                        for (var d = 0; d < tds.length; d++) {
+                            nukeEl(tds[d]);
+                            if (isWard) {
+                                tds[d].classList.add('lbf-ward-cell');
+                                tds[d].setAttribute('valign', 'middle');
+                                tds[d].style.setProperty('vertical-align', 'middle', 'important');
+                            }
+                        }
+                    }
+                }
+                stripRowBorders(document);
+                afterClone(document);
+                if (window.MutationObserver) {
+                    var mo = new MutationObserver(function (mutations) {
+                        for (var i = 0; i < mutations.length; i++) {
+                            var nodes = mutations[i].addedNodes;
+                            for (var j = 0; j < nodes.length; j++) {
+                                if (nodes[j].nodeType === 1) {
+                                    afterClone(nodes[j]);
+                                }
+                            }
+                        }
+                    });
+                    mo.observe(document.body, { childList: true, subtree: true });
+                }
+                $(document).on(
+                    'click',
+                    '.fa-plus-circle, .fa-plus, .add-more, .addmore, button, a, [onclick*="duplicate"], [onclick*="Duplicate"], [onclick*="Add"], [onclick*="add"]',
+                    function () {
+                        setTimeout(function () { afterClone(document); }, 0);
+                        setTimeout(function () { afterClone(document); }, 50);
+                        setTimeout(function () { afterClone(document); }, 200);
+                    }
+                );
+                var _origDup = window.duplicateRow;
+                Object.defineProperty(window, 'duplicateRow', {
+                    configurable: true,
+                    set: function (fn) {
+                        _origDup = function () {
+                            var ret = fn.apply(this, arguments);
+                            setTimeout(function () { afterClone(document); }, 0);
+                            return ret;
+                        };
+                    },
+                    get: function () { return _origDup; }
+                });
+            })();
 
             if (window.tabbify) {
                 tabbify();
@@ -724,12 +2135,46 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
     </script>
 </head>
 
-<body class="body_top"<?php if ($from_issue_form) {
+<?php
+// Form-specific body class so CSS can target one LBF without affecting others.
+$lbf_body_class = 'body_top';
+if ($formname !== '') {
+    $lbf_body_class .= ' lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+}
+if (!empty($lbf_ward_style)) {
+    $lbf_body_class .= ' lbf-ward-style';
+}
+if (!empty($lbf_vcenter_fields)) {
+    $lbf_body_class .= ' lbf-vcenter-fields';
+}
+if (!empty($lbf_suppress_row_borders)) {
+    $lbf_body_class .= ' lbf-no-row-borders';
+}
+?>
+<body class="<?php echo attr($lbf_body_class); ?>"<?php
+if (!empty($lbf_ward_style)) {
+    echo " data-lbf-ward-style='1'";
+}
+if (!empty($lbf_vcenter_fields)) {
+    echo " data-lbf-vcenter='1'";
+}
+if (!empty($lbf_suppress_row_borders)) {
+    echo " data-lbf-nuke-row-borders='1'";
+}
+if ($from_issue_form) {
     echo " style='background-color:#ffffff'";
-} ?>>
-<div class='container'>
+}
+?>>
+<?php
+// Full-bleed card chrome: title left + action buttons right flush with edges
+// (Ward Dietary Requirements / Patient Transfer / Referral reference look).
+?>
+<div class='container lbf-card-flush'>
     <?php
-    echo "<form method='post' " .
+    echo "<form method='post' class='lbf-form' data-lbf-formname='" . attr($formname) . "' " .
+        (!empty($lbf_ward_style) ? "data-lbf-ward-style='1' " : "") .
+        (!empty($lbf_vcenter_fields) ? "data-lbf-vcenter='1' " : "") .
+        (!empty($lbf_suppress_row_borders) ? "data-lbf-nuke-row-borders='1' " : "") .
         "action='$rootdir/forms/LBF/new.php?formname=" . attr($formname) . "&id=$formid&portalid=$portalid' " .
         "onsubmit='return validate(this)'>\n";
 
@@ -747,8 +2192,12 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
     <div class="container-responsive">
         <div class="row">
-            <div class="col-xs-12">
-                <div class="page-header">
+            <!--
+              lbf-page-header-col: no Bootstrap column gutter so the title /
+              page-header left edge matches group fields (not indented).
+            -->
+            <div class="col-xs-12 lbf-page-header-col<?php echo !empty($lbf_ward_style) ? ' lbf-top-bar' : ''; ?>">
+                <div class="<?php echo !empty($lbf_ward_style) ? 'lbf-top-title page-header' : 'page-header'; ?>">
                     <h3>
                         <?php echo text($formtitle) . " " . xlt('for') . ' ';
                         echo text($enrow['fname']) . ' ' . text($enrow['mname']) . ' ' . text($enrow['lname']);
@@ -764,8 +2213,13 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     $form_provider_id = empty($firow['provider_id']) ? 0 : intval($firow['provider_id']);
 
                     // Provider selector.
-                    echo "&nbsp;&nbsp;";
-                    echo xlt('Provider') . ": ";
+                    if (!empty($lbf_ward_style)) {
+                        echo "<span class='lbf-top-meta'>";
+                        echo "<span>" . xlt('Provider') . ":</span> ";
+                    } else {
+                        echo "&nbsp;&nbsp;";
+                        echo xlt('Provider') . ": ";
+                    }
                     // TBD: Refactor this function out of the FeeSheetHTML class as that is not the best place for it.
                     echo FeeSheetHtml::genProviderSelect('form_provider_id', '-- ' . xl("Please Select") . ' --', $form_provider_id);
 
@@ -773,7 +2227,9 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     // We skip this if in an issue form tab because removing and adding visit form tabs is
                     // beyond the current scope of that code.
                     if (!empty($LBF_ISSUE_TYPE) && !$from_issue_form) {
-                        echo "&nbsp;&nbsp;";
+                        if (empty($lbf_ward_style)) {
+                            echo "&nbsp;&nbsp;";
+                        }
                         $query = "SELECT id, title, date, begdate FROM lists WHERE pid = ? AND type = ? " .
                             "ORDER BY COALESCE(begdate, date) DESC, id DESC";
                         $ires = sqlStatement($query, array($pid, $LBF_ISSUE_TYPE));
@@ -790,8 +2246,14 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         }
                         echo "</select>\n";
                     }
+                    if (!empty($lbf_ward_style)) {
+                        echo "</span>";
+                    }
                     ?>
                 </div>
+                <?php if (!empty($lbf_ward_style)) { ?>
+                <div class="lbf-top-actions" aria-label="Form actions"></div>
+                <?php } ?>
             </div>
 
             <?php $cmsportal_login = $enrow['cmsportal_login'];
@@ -939,7 +2401,10 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     $group_levels = substr($group_levels, 0, -1); // remove last character
                     // No div for an empty group name.
                     if (strlen($gname)) {
-                        echo "</div>\n";
+                        echo "</div>\n"; // .section
+                        if (!empty($lbf_ward_style)) {
+                            echo "</div>\n"; // .lbf-group-card
+                        }
                     }
                 }
 
@@ -957,33 +2422,61 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     $group_seq = 'lbf' . $group_levels;
                     $group_name = $gname;
 
-                    if ($some_group_is_open) {
+                    if (!empty($lbf_ward_style)) {
+                        // Ward-style multi-card layout shows all group cards open by default.
+                        $display_style = 'block';
+                    } else if ($some_group_is_open) {
                         // Must have edit option "I" in first item for its group to be initially open.
                         $display_style = isOption($edit_options, 'I') === false ? 'none' : 'block';
                     }
 
                     // If group name is blank, no checkbox or div.
                     if (strlen($gname)) {
-                        echo "<br /><span class='bold'><input type='checkbox' name='form_cb_" . attr($group_seq) . "' value='1' " .
-                            "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
-                        if ($display_style == 'block') {
-                            echo " checked";
-                        }
+                        if (!empty($lbf_ward_style)) {
+                            // Ward Dietary card: one white card per LBF group.
+                            echo "<div class='lbf-group-card' data-lbf-group='" . attr($group_seq) . "'>\n";
+                            echo "<div class='lbf-group-card-header'>\n";
+                            echo "<span class='bold lbf-group-card-title'><input type='checkbox' class='lbf-group-toggle' name='form_cb_" . attr($group_seq) . "' value='1' " .
+                                "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
+                            if ($display_style == 'block') {
+                                echo " checked";
+                            }
+                            echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
+                            echo "</div>\n";
+                            echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive lbf-group-card-body' style='display:" . attr($display_style) . ";'>\n";
+                        } else {
+                            echo "<br /><span class='bold'><input type='checkbox' name='form_cb_" . attr($group_seq) . "' value='1' " .
+                                "onclick='return divclick(this,\"div_" . attr(addslashes($group_seq)) . "\");'";
+                            if ($display_style == 'block') {
+                                echo " checked";
+                            }
 
-                        echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
-                        echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive' style='display:" . attr($display_style) . ";'>\n";
+                            echo " /><b>" . text(xl_layout_label($group_name)) . "</b></span>\n";
+                            echo "<div id='div_" . attr($group_seq) . "' class='section table-responsive' style='display:" . attr($display_style) . ";'>\n";
+                        }
                     }
 
                     $group_table_active = true;
-                    echo " <table border='0' cellspacing='0' cellpadding='0' class='lbfdata'>\n";
+                    // lbfdata-no-row-borders → CSS kills Bootstrap td border-top (#ddd).
+                    $lbf_table_class = 'lbfdata';
+                    $lbf_table_style = '';
+                    if (!empty($lbf_suppress_row_borders)) {
+                        $lbf_table_class .= ' lbfdata-no-row-borders';
+                        $lbf_table_style = " style='border:0!important;border-collapse:collapse!important;'";
+                    }
+                    echo " <table border='0' cellspacing='0' cellpadding='0' class='" . attr($lbf_table_class) . "'" . $lbf_table_style . ">\n";
 
                     if ($subtitle) {
                         // There is a group subtitle so show it.
-                        echo "<tr><td class='bold' style='color:#0000ff' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
-                        echo "<tr><td class='bold' style='height:4pt' colspan='" . attr($CPR) . "'></td></tr>\n";
+                        $sub_border = !empty($lbf_suppress_row_borders)
+                            ? "border:0!important;border-top:0!important;border-bottom:0!important;"
+                            : '';
+                        $sub_color = !empty($lbf_ward_style) ? '' : 'color:#0000ff;';
+                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold lbf-group-subtitle' style='" . $sub_color . $sub_border . "' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
+                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold' style='height:4pt;" . $sub_border . "' colspan='" . attr($CPR) . "'></td></tr>\n";
                     }
 
-                    $display_style = 'none';
+                    $display_style = !empty($lbf_ward_style) ? 'block' : 'none';
 
                     // Initialize historical data array and write date headers.
                     $historical_ids = array();
@@ -1020,15 +2513,43 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
                 }
 
+// Inline style that beats Bootstrap border-top:1px solid #ddd when suppressing.
+                $lbf_cell_border_style = !empty($lbf_suppress_row_borders)
+                    ? "border:0!important;border-top:0!important;border-bottom:0!important;"
+                    : '';
+                // Ward-style / meal vcenter use middle; meal also gets nuclear flex styles.
+                $lbf_td_valign = (!empty($lbf_vcenter_fields) || !empty($lbf_ward_style)) ? 'middle' : 'top';
+                if (!empty($lbf_vcenter_fields)) {
+                    // Meal satisfaction only — flex center (single field-per-row layouts).
+                    $lbf_td_vcenter_style = "vertical-align:middle!important;display:flex;align-items:center;flex-wrap:wrap;";
+                    $lbf_td_vcenter_class = ' lbf-vcenter-cell';
+                } else if (!empty($lbf_ward_style)) {
+                    // Ward dietary reference: mild valign only (keep table cells).
+                    $lbf_td_vcenter_style = "vertical-align:middle!important;";
+                    $lbf_td_vcenter_class = ' lbf-ward-cell';
+                } else {
+                    $lbf_td_vcenter_style = '';
+                    $lbf_td_vcenter_class = '';
+                }
+
 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
                     end_row();
-                    if (isOption($edit_options, 'RS')) {
-                        echo " <tr class='RS'>";
-                    } else if (isOption($edit_options, 'RO')) {
-                        echo " <tr class='RO'>";
+                    $lbf_row_type_attr = '';
+                    if (isOption($edit_options, 'SP')) {
+                        $lbf_row_type_attr = " data-lbf-row-type='sp'";
+                    } else if ($data_type == 31) {
+                        $lbf_row_type_attr = " data-lbf-row-type='static'";
+                    }
+                    // Skip RS/RO border classes when this form suppresses row separators.
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
+                        echo " <tr class='RS'" . $lbf_row_type_attr . ">";
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
+                        echo " <tr class='RO'" . $lbf_row_type_attr . ">";
+                    } else if (!empty($lbf_suppress_row_borders)) {
+                        echo " <tr style='" . $lbf_cell_border_style . "'" . $lbf_row_type_attr . ">";
                     } else {
-                        echo " <tr>";
+                        echo " <tr" . $lbf_row_type_attr . ">";
                     }
 
                     // Clear historical data string.
@@ -1050,27 +2571,34 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (isOption($edit_options, 'SP')) {
                         $datacols = 0;
                         $titlecols = $CPR;
-                        echo "<td valign='top' colspan='" . attr($titlecols) . "'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "'";
                     } else {
-                        echo "<td valign='top' colspan='" . attr($titlecols) . "' nowrap";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' nowrap";
                     }
                     echo " class='";
                     echo ($frow['uor'] == 2) ? "required" : "bold";
                     if ($graphable) {
                         echo " graph";
                     }
+                    echo $lbf_td_vcenter_class;
 
                     echo "'";
 
+                    $label_style = $lbf_cell_border_style . $lbf_td_vcenter_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:10pt'";
+                        $label_style .= "padding-left:10pt;";
+                    }
+                    if ($label_style !== '') {
+                        echo " style='" . $label_style . "'";
                     }
                     // This ID is used by action conditions and also show_graph().
                     echo " id='label_id_" . attr($field_id) . "'";
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' colspan='" . attr($titlecols) . "' class='text' nowrap>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' colspan='" . attr($titlecols) . "' class='text" . $lbf_td_vcenter_class . "' nowrap"
+                            . (($lbf_cell_border_style . $lbf_td_vcenter_style) !== '' ? " style='" . $lbf_cell_border_style . $lbf_td_vcenter_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $titlecols;
@@ -1096,24 +2624,29 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 // Handle starting of a new data cell.
                 if ($datacols > 0) {
                     end_cell();
-                    if (isOption($edit_options, 'DS')) {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RS'";
-                    }
-                    if (isOption($edit_options, 'DO')) {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text RO'";
+                    if (!$lbf_suppress_row_borders && isOption($edit_options, 'DS')) {
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RS" . $lbf_td_vcenter_class . "'";
+                    } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'DO')) {
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text RO" . $lbf_td_vcenter_class . "'";
                     } else {
-                        echo "<td valign='top' colspan='" . attr($datacols) . "' class='text'";
+                        echo "<td valign='" . $lbf_td_valign . "' colspan='" . attr($datacols) . "' class='text" . $lbf_td_vcenter_class . "'";
                     }
                     // This ID is used by action conditions.
                     echo " id='value_id_" . attr($field_id) . "'";
+                    $value_style = $lbf_cell_border_style . $lbf_td_vcenter_style;
                     if ($cell_count > 0) {
-                        echo " style='padding-left:5pt'";
+                        $value_style .= "padding-left:5pt;";
+                    }
+                    if ($value_style !== '') {
+                        echo " style='" . $value_style . "'";
                     }
 
                     echo ">";
 
                     foreach ($historical_ids as $key => $dummy) {
-                        $historical_ids[$key] .= "<td valign='top' align='right' colspan='" . attr($datacols) . "' class='text'>";
+                        $historical_ids[$key] .= "<td valign='" . $lbf_td_valign . "' align='right' colspan='" . attr($datacols) . "' class='text" . $lbf_td_vcenter_class . "'"
+                            . (($lbf_cell_border_style . $lbf_td_vcenter_style) !== '' ? " style='" . $lbf_cell_border_style . $lbf_td_vcenter_style . "'" : "")
+                            . ">";
                     }
 
                     $cell_count += $datacols;
@@ -1148,7 +2681,10 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 $group_levels = substr($group_levels, 0, -1); // remove last character
                 // No div for an empty group name.
                 if (strlen($gname)) {
-                    echo "</div>\n";
+                    echo "</div>\n"; // .section
+                    if (!empty($lbf_ward_style)) {
+                        echo "</div>\n"; // .lbf-group-card
+                    }
                 }
             }
 
@@ -1456,7 +2992,11 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             ?>
             <br>
 
-            <div class="col-xs-12">
+            <!--
+              lbf-actions-col: no Bootstrap gutter; right-align so Save/Cancel/Back
+              right edge matches the white card (Meal Satisfaction / Ward Dietary look).
+            -->
+            <div class="col-xs-12 lbf-actions-col">
                 <div class="btn-group">
 
                     <?php
