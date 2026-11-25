@@ -473,20 +473,24 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         }
 
         /*
-         * Ward Dietary / Patient Transfer / Referral multi-card reference:
+         * Patient Transfer / Ward Dietary / Referral multi-card reference:
          * Scoped strictly under body.lbf-ward-style so it has zero effect on
          * other LBFs while staying 100% available even if activated via JS fallback.
-         * - Grey page background (#e9ecef); header bar OUTSIDE cards on top
-         * - Blue #2a6ebb top bar: title + provider left, relocated actions right
-         * - Each group/section = its OWN white rounded .lbf-group-card with gap
+         * - Soft cool-grey page background (#f4f6fb)
+         * - Transparent header OUTSIDE cards: vertical #2d3691 accent bar + bold
+         *   #0f2c59 title left, flush action buttons right (Save #2d3691,
+         *   Don't Save #dfdfdf, Back #ff4242)
+         * - Each group/section = its OWN white rounded .lbf-group-card (#ffffff,
+         *   1px solid #e2e8f0, 10px radius, 16px gap, inset #e8ecf4 header divider,
+         *   clean bold #111827 heading without collapse checkbox clutter)
          */
         html:has(body.lbf-ward-style),
         html body.lbf-ward-style,
         html body.lbf-ward-style.body_top {
             margin: 0 !important;
             padding: 0 !important;
-            background: #e9ecef !important;
-            background-color: #e9ecef !important;
+            background: #f4f6fb !important;
+            background-color: #f4f6fb !important;
             min-height: 100%;
         }
         html body.lbf-ward-style.body_top > .container,
@@ -495,12 +499,12 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         html body.lbf-ward-style .container-responsive,
         html body.lbf-ward-style .container-responsive > .row,
         html body.lbf-ward-style .col-xs-12 {
-            background: #e9ecef !important;
-            background-color: #e9ecef !important;
+            background: #f4f6fb !important;
+            background-color: #f4f6fb !important;
             box-shadow: none !important;
         }
         html body.lbf-ward-style .container.lbf-card-flush {
-            padding: 12px 14px !important;
+            padding: 22px 24px 24px 24px !important;
             max-width: none !important;
             width: 100% !important;
             box-sizing: border-box !important;
@@ -509,69 +513,85 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         html body.lbf-ward-style .container-responsive > .row::after {
             display: none !important;
         }
-        /* Header bar OUTSIDE cards, flush with left/right card edges */
+        /* Transparent header OUTSIDE cards, flush with left/right card edges */
         html body.lbf-ward-style .lbf-top-bar {
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
-            gap: 10px 14px !important;
+            gap: 12px 16px !important;
             flex-wrap: wrap !important;
-            background: #2a6ebb !important;
-            background-color: #2a6ebb !important;
-            color: #ffffff !important;
-            border-radius: 6px !important;
-            padding: 10px 14px !important;
-            margin: 0 0 16px 0 !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            color: #0f2c59 !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 0 22px 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
             border: 0 !important;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+            border-bottom: 0 !important;
+            box-shadow: none !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-title,
         html body.lbf-ward-style .lbf-top-bar .page-header {
             display: flex !important;
             align-items: center !important;
             flex-wrap: wrap !important;
-            gap: 6px 14px !important;
+            gap: 8px 14px !important;
             flex: 1 1 auto !important;
             min-width: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             border: 0 !important;
-            color: #ffffff !important;
+            border-bottom: 0 !important;
+            color: #0f2c59 !important;
             background: transparent !important;
             background-color: transparent !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
         html body.lbf-ward-style .lbf-top-bar .page-header h3 {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 14px !important;
             margin: 0 !important;
             padding: 0 !important;
             border: 0 !important;
-            color: #ffffff !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            line-height: 1.3 !important;
+            color: #0f2c59 !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            line-height: 1.25 !important;
+            letter-spacing: -0.01em !important;
             background: transparent !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3::before,
+        html body.lbf-ward-style .lbf-top-bar .page-header h3::before {
+            content: '' !important;
+            display: inline-block !important;
+            width: 4px !important;
+            height: 28px !important;
+            border-radius: 2px !important;
+            background-color: #2d3691 !important;
+            flex-shrink: 0 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-meta {
             display: inline-flex !important;
             align-items: center !important;
             flex-wrap: wrap !important;
             gap: 6px !important;
-            font-size: 12.5px !important;
-            font-weight: 400 !important;
-            color: #e8f1fb !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-title select,
         html body.lbf-ward-style .lbf-top-bar .page-header select {
-            color: #1f2937 !important;
+            color: #1e293b !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
-            border: 1px solid #c5d6ea !important;
-            border-radius: 4px !important;
-            padding: 3px 8px !important;
-            height: 28px !important;
-            font-size: 12.5px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 4px 10px !important;
+            height: 32px !important;
+            font-size: 13px !important;
             line-height: 1.3 !important;
             margin: 0 !important;
         }
@@ -583,7 +603,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             float: none !important;
             display: inline-flex !important;
             align-items: center !important;
-            gap: 6px !important;
+            gap: 10px !important;
             flex-wrap: wrap !important;
             background: transparent !important;
             margin: 0 !important;
@@ -595,43 +615,81 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             float: none !important;
             margin: 0 !important;
             margin-left: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 35px !important;
+            min-height: 35px !important;
+            padding: 0 16px !important;
+            border-radius: 6px !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+            box-shadow: none !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
-            color: #1f3b5b !important;
-            border: 1px solid #d0dbe6 !important;
-            border-radius: 4px !important;
-            text-decoration: none !important;
-            padding: 5px 11px !important;
-            font-size: 13px !important;
-            line-height: 1.3 !important;
-            font-weight: 500 !important;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) !important;
-        }
-        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save {
-            font-weight: 600 !important;
+            color: #2d3691 !important;
+            border: 1px solid #cbd5e1 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn:hover,
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link:hover,
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-default:hover {
-            background: #eef4fa !important;
-            background-color: #eef4fa !important;
-            color: #132840 !important;
-            border-color: #b7c9dc !important;
+            background: #eef2ff !important;
+            background-color: #eef2ff !important;
+            color: #232a73 !important;
+            border-color: #94a3b8 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save {
+            background: #2d3691 !important;
+            background-color: #2d3691 !important;
+            color: #ffffff !important;
+            border: 1px solid #2d3691 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save:hover {
+            background: #232a73 !important;
+            background-color: #232a73 !important;
+            color: #ffffff !important;
+            border-color: #232a73 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-cancel {
+            background: #dfdfdf !important;
+            background-color: #dfdfdf !important;
+            color: #222222 !important;
+            border: 1px solid #d4d4d8 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-cancel:hover {
+            background: #d1d5db !important;
+            background-color: #d1d5db !important;
+            color: #111827 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-back {
+            background: #ff4242 !important;
+            background-color: #ff4242 !important;
+            color: #ffffff !important;
+            border: 1px solid #ff4242 !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-back:hover {
+            background: #e53535 !important;
+            background-color: #e53535 !important;
+            color: #ffffff !important;
+            border-color: #e53535 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions select {
-            color: #1f2937 !important;
+            color: #1e293b !important;
             background: #ffffff !important;
-            border: 1px solid #c5d6ea !important;
-            border-radius: 4px !important;
-            padding: 3px 6px !important;
-            height: 28px !important;
-            font-size: 12.5px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            height: 32px !important;
+            font-size: 13px !important;
         }
         html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated,
         html body.lbf-ward-style br.lbf-actions-spacer-hidden {
             display: none !important;
         }
-        /* Stack of SEPARATE white rounded cards (grey #e9ecef gap between each card) */
+        /* Stack of SEPARATE white rounded cards (#f4f6fb gap between each card) */
         html body.lbf-ward-style .lbf-cards-stack {
             display: block !important;
             width: 100% !important;
@@ -642,15 +700,18 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             display: block !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
-            border: 1px solid #c5ced8 !important;
-            border-radius: 8px !important;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-            padding: 14px 16px 16px 16px !important;
-            margin: 0 0 18px 0 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 1px 3px rgba(15, 44, 89, 0.05) !important;
+            padding: 0 20px 20px 20px !important;
+            margin: 0 0 16px 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
             float: none !important;
             clear: both !important;
+        }
+        html body.lbf-ward-style .lbf-group-card.lbf-card-no-header {
+            padding-top: 18px !important;
         }
         html body.lbf-ward-style .lbf-group-card:last-child {
             margin-bottom: 4px !important;
@@ -659,38 +720,36 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
-            margin: 0 0 12px 0 !important;
-            padding: 0 0 8px 0 !important;
+            margin: 0 0 14px 0 !important;
+            padding: 15px 0 13px 0 !important;
             border: 0 !important;
-            border-bottom: 1px solid #e6ebf0 !important;
+            border-bottom: 1px solid #e8ecf4 !important;
             background: transparent !important;
             background-color: transparent !important;
             font-weight: 700 !important;
-            font-size: 13.5px !important;
-            line-height: 1.35 !important;
-            color: #1f3b5b !important;
+            font-size: 14px !important;
+            line-height: 1.3 !important;
+            color: #111827 !important;
         }
         html body.lbf-ward-style .lbf-group-card-header .lbf-group-card-title,
         html body.lbf-ward-style .lbf-group-card-header > span {
             display: inline-flex !important;
             align-items: center !important;
-            gap: 7px !important;
+            gap: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            color: #1f3b5b !important;
-            font-size: 13.5px !important;
+            color: #111827 !important;
+            font-size: 14px !important;
             font-weight: 700 !important;
         }
         html body.lbf-ward-style .lbf-group-card-header b {
-            color: #1f3b5b !important;
+            color: #111827 !important;
             font-weight: 700 !important;
+            font-size: 14px !important;
         }
         html body.lbf-ward-style .lbf-group-card-header input[type=checkbox],
         html body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
-            margin: 0 !important;
-            vertical-align: middle !important;
-            flex-shrink: 0 !important;
-            cursor: pointer;
+            display: none !important;
         }
         html body.lbf-ward-style .lbf-group-card div.section,
         html body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
@@ -713,21 +772,34 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
         html body.lbf-ward-style table.lbfdata > tbody > tr > td,
         html body.lbf-ward-style table.lbfdata > tbody > tr > th,
         .table > tbody > tr > td.lbf-ward-cell {
-            padding: 6px 8px !important;
+            padding: 8px 10px !important;
             vertical-align: middle !important;
             background: transparent !important;
             background-color: transparent !important;
             font-size: 13px !important;
             line-height: 1.4 !important;
-            color: #1f2937 !important;
+            color: #1e293b !important;
         }
         html body.lbf-ward-style table.lbfdata > tbody > tr > td:first-child {
             padding-left: 0 !important;
         }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td:last-child {
+            padding-right: 0 !important;
+        }
         html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold,
         html body.lbf-ward-style table.lbfdata > tbody > tr > td.required {
-            font-weight: 600 !important;
+            font-weight: 500 !important;
+            color: #334155 !important;
             white-space: nowrap;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold b,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required b {
+            font-weight: 500 !important;
+            color: #334155 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold:not(:first-child),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required:not(:first-child) {
+            padding-left: 24px !important;
         }
         html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold:not([colspan]),
         html body.lbf-ward-style table.lbfdata > tbody > tr > td.required:not([colspan]),
@@ -736,12 +808,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             width: 1% !important;
             padding-right: 14px !important;
         }
-        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required,
-        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required b {
-            color: #b42318 !important;
-        }
         html body.lbf-ward-style table.lbfdata > tbody > tr > td.lbf-group-subtitle {
-            color: #4a607a !important;
+            color: #475569 !important;
             font-size: 12.5px !important;
             font-weight: 600 !important;
             padding-top: 2px !important;
@@ -759,49 +827,77 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             background: transparent !important;
             font-size: 13px !important;
         }
-        /* Unified form controls inside cards (beats style_light.css harsh dark borders) */
-        html body.lbf-ward-style .lbf-group-card input[type="text"],
+        /* Unified form controls inside cards (matches Patient Transfer 32px #cbd5e1 inputs) */
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field),
         html body.lbf-ward-style .lbf-group-card input[type="number"],
         html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="time"],
+        html body.lbf-ward-style .lbf-group-card input[type="datetime-local"],
         html body.lbf-ward-style .lbf-group-card input[type="email"],
         html body.lbf-ward-style .lbf-group-card input[type="tel"],
         html body.lbf-ward-style .lbf-group-card select,
         html body.lbf-ward-style .lbf-group-card textarea {
             background-color: #ffffff !important;
-            border: 1px solid #c5ced8 !important;
-            border-radius: 4px !important;
-            padding: 5px 8px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 5px 10px !important;
             margin: 0 !important;
             font-size: 13px !important;
-            color: #1f2937 !important;
+            color: #1e293b !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
             box-shadow: none !important;
         }
-        html body.lbf-ward-style .lbf-group-card input[type="text"],
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field),
         html body.lbf-ward-style .lbf-group-card input[type="number"],
         html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="time"],
+        html body.lbf-ward-style .lbf-group-card input[type="datetime-local"],
         html body.lbf-ward-style .lbf-group-card input[type="email"],
         html body.lbf-ward-style .lbf-group-card input[type="tel"],
         html body.lbf-ward-style .lbf-group-card select {
-            min-height: 30px !important;
-            height: auto !important;
+            min-height: 32px !important;
+            height: 32px !important;
             line-height: 1.35 !important;
             display: inline-block !important;
         }
+        html body.lbf-ward-style .lbf-group-card select[multiple] {
+            height: auto !important;
+            min-height: 64px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card .select2-container .select2-selection--single,
+        html body.lbf-ward-style .lbf-group-card .select2-container .select2-choice {
+            min-height: 32px !important;
+            height: 32px !important;
+            line-height: 30px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > select:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="text"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="date"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > input[type="time"]:only-child,
+        html body.lbf-ward-style .lbf-group-card table.lbfdata > tbody > tr > td.text > .select2-container {
+            width: 100% !important;
+        }
         html body.lbf-ward-style .lbf-group-card textarea {
-            min-height: 68px !important;
+            min-height: 76px !important;
+            padding: 8px 10px !important;
             line-height: 1.4 !important;
             resize: vertical;
             display: block !important;
             width: 100% !important;
         }
-        html body.lbf-ward-style .lbf-group-card input[type="text"]:focus,
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:not(.select2-search__field):focus,
+        html body.lbf-ward-style .lbf-group-card input[type="date"]:focus,
+        html body.lbf-ward-style .lbf-group-card input[type="time"]:focus,
         html body.lbf-ward-style .lbf-group-card select:focus,
         html body.lbf-ward-style .lbf-group-card textarea:focus {
-            border-color: #2a6ebb !important;
+            border-color: #2d3691 !important;
             outline: none !important;
-            box-shadow: 0 0 0 2px rgba(42, 110, 187, 0.15) !important;
+            box-shadow: 0 0 0 2px rgba(45, 54, 145, 0.14) !important;
         }
         html body.lbf-ward-style .lbf-group-card input[type="radio"],
         html body.lbf-ward-style .lbf-group-card input[type="checkbox"] {
@@ -818,25 +914,27 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             gap: 6px !important;
             margin: 0 !important;
             font-weight: 400 !important;
-            color: #1f2937 !important;
+            color: #1e293b !important;
             white-space: nowrap;
         }
-        html body.lbf-ward-style .lbf-group-card button,
-        html body.lbf-ward-style .lbf-group-card input[type="button"] {
+        html body.lbf-ward-style .lbf-group-card button:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning),
+        html body.lbf-ward-style .lbf-group-card input[type="button"]:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning) {
             background: #f8fafc !important;
             background-color: #f8fafc !important;
-            color: #1f3b5b !important;
-            border: 1px solid #c5ced8 !important;
-            border-radius: 4px !important;
-            padding: 4px 10px !important;
-            font-size: 12.5px !important;
+            color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            min-height: 32px !important;
+            padding: 5px 12px !important;
+            font-size: 13px !important;
             font-weight: 500 !important;
             cursor: pointer;
         }
-        html body.lbf-ward-style .lbf-group-card button:hover,
-        html body.lbf-ward-style .lbf-group-card input[type="button"]:hover {
-            background: #eef4fa !important;
-            border-color: #9cb2c9 !important;
+        html body.lbf-ward-style .lbf-group-card button:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning):hover,
+        html body.lbf-ward-style .lbf-group-card input[type="button"]:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-info):not(.btn-warning):hover {
+            background: #eef2ff !important;
+            border-color: #2d3691 !important;
+            color: #2d3691 !important;
         }
         /* Kill legacy blue section box if still present outside cards */
         html body.lbf-ward-style div.section:not(.lbf-group-card-body) {
@@ -1026,7 +1124,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral|lbtref/i.test(href)) {
                         return true;
                     }
-                    var h3 = document.querySelector('.page-header h3, .lbf-top-title h3');
+                    var h3 = document.querySelector('.page-header h1, .page-header h2, .page-header h3, .lbf-top-title h3');
                     if (h3) {
                         var h3Txt = (h3.innerText || h3.textContent || '').replace(/\s+/g, ' ').trim();
                         var titlePart = h3Txt.split(/\s+for\s+/i)[0] || h3Txt;
@@ -1035,12 +1133,12 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         }
                     }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
-                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|COUNTER[\s-]*REFERRAL/i.test(txt);
+                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|REFERRAL\s*LETTER|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|REFERRING\s*INSTITUTION|RECEIVING\s*INSTITUTION|COUNTER[\s-]*REFERRAL/i.test(txt);
                 }
 
                 function ensureWardHtmlBg() {
                     if (document.documentElement) {
-                        document.documentElement.style.setProperty('background-color', '#e9ecef', 'important');
+                        document.documentElement.style.setProperty('background-color', '#f4f6fb', 'important');
                         document.documentElement.style.setProperty('margin', '0', 'important');
                         document.documentElement.style.setProperty('padding', '0', 'important');
                     }
@@ -1134,7 +1232,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
                 function makeCard(titleNode, bodyNodes) {
                     var card = document.createElement('div');
-                    card.className = 'lbf-group-card';
+                    card.className = titleNode ? 'lbf-group-card' : 'lbf-group-card lbf-card-no-header';
                     if (titleNode) {
                         var header = document.createElement('div');
                         header.className = 'lbf-group-card-header';
@@ -1325,6 +1423,11 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             while (table.rows.length > 0 && isEmptySpacerRow(table.rows[0])) {
                                 table.deleteRow(0);
                             }
+                        } else if (table.rows && table.rows.length > 0) {
+                            var tableTxt = titleText(table);
+                            if (/Referring\s*Institution|Receiving\s*Institution|Referring\s*Clinician|Referral\s*Date|Referral\s*Urgency/i.test(tableTxt)) {
+                                titleNode = 'Referral Information';
+                            }
                         }
                         stack.appendChild(makeCard(titleNode, [table]));
                     }
@@ -1340,6 +1443,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             if (cards[i].parentNode) {
                                 cards[i].parentNode.removeChild(cards[i]);
                             }
+                        } else if (!cards[i].querySelector('.lbf-group-card-header')) {
+                            cards[i].classList.add('lbf-card-no-header');
                         }
                     }
                 }
@@ -1348,14 +1453,21 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     var titleBox = topBar.querySelector('.lbf-top-title, .page-header');
                     if (!titleBox) { return; }
                     titleBox.classList.add('lbf-top-title');
-                    // Wrap any loose Provider / Case text + select nodes into .lbf-top-meta for clean inline layout.
+                    // Wrap any loose Provider / Case text + select nodes into .lbf-top-meta for clean inline layout,
+                    // without sweeping any action button groups into the title metadata.
                     if (!titleBox.querySelector('.lbf-top-meta')) {
-                        var h3 = titleBox.querySelector('h3');
+                        var h3 = titleBox.querySelector('h1, h2, h3');
                         var extras = [];
                         var node = h3 ? h3.nextSibling : null;
                         while (node) {
                             var next = node.nextSibling;
-                            if (node.nodeType === 1 || (node.nodeType === 3 && String(node.textContent || '').replace(/\u00a0/g, ' ').trim() !== '')) {
+                            if (node.nodeType === 1) {
+                                var isActionEl = (node.classList && (node.classList.contains('btn-group') || node.classList.contains('lbf-top-actions')))
+                                    || (node.querySelector && node.querySelector('.btn-save, .btn-cancel, .btn-back'));
+                                if (!isActionEl) {
+                                    extras.push(node);
+                                }
+                            } else if (node.nodeType === 3 && String(node.textContent || '').replace(/\u00a0/g, ' ').trim() !== '') {
                                 extras.push(node);
                             } else if (node.nodeType === 3) {
                                 titleBox.removeChild(node);
@@ -1388,8 +1500,13 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         topBar.appendChild(actionsSlot);
                     }
                     var actionsCol = form.querySelector('.lbf-actions-col') || document.querySelector('.lbf-actions-col');
-                    if (!actionsCol) { return; }
-                    var btnGroup = actionsCol.querySelector('.btn-group');
+                    var btnGroup = actionsCol ? actionsCol.querySelector('.btn-group') : null;
+                    if (!btnGroup) {
+                        var titleBox = topBar.querySelector('.lbf-top-title, .page-header');
+                        if (titleBox) {
+                            btnGroup = titleBox.querySelector('.btn-group');
+                        }
+                    }
                     if (!btnGroup) { return; }
                     // Strip raw &nbsp; / whitespace text nodes inside .btn-group so flex gap is uniform.
                     var child = btnGroup.firstChild;
@@ -1403,14 +1520,16 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (!actionsSlot.contains(btnGroup)) {
                         actionsSlot.appendChild(btnGroup);
                     }
-                    actionsCol.classList.add('lbf-actions-relocated');
-                    // Hide stray <br> immediately preceding the relocated actions row.
-                    var prev = actionsCol.previousSibling;
-                    while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
-                        prev = prev.previousSibling;
-                    }
-                    if (prev && prev.nodeType === 1 && /^BR$/i.test(prev.tagName || '')) {
-                        prev.classList.add('lbf-actions-spacer-hidden');
+                    if (actionsCol) {
+                        actionsCol.classList.add('lbf-actions-relocated');
+                        // Hide stray <br> immediately preceding the relocated actions row.
+                        var prev = actionsCol.previousSibling;
+                        while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                            prev = prev.previousSibling;
+                        }
+                        if (prev && prev.nodeType === 1 && /^BR$/i.test(prev.tagName || '')) {
+                            prev.classList.add('lbf-actions-spacer-hidden');
+                        }
                     }
                     var cancelBtns = actionsSlot.querySelectorAll('.btn-cancel');
                     for (var b = 0; b < cancelBtns.length; b++) {
