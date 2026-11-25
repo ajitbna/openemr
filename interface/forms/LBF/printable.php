@@ -17,6 +17,13 @@ $FONTSIZE = 9;
 
 // The form name is passed to us as a GET parameter.
 $formname = isset($_GET['formname']) ? $_GET['formname'] : '';
+$lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
+    || (stripos($formname, 'feeding_regime') !== false)
+    || (stripos($formname, 'ward_dietary') !== false)
+    || (stripos($formname, 'dietary_requirements') !== false)
+    || (stripos($formname, 'patient_transfer') !== false)
+    || (stripos($formname, 'lt_referral') !== false)
+    || (strcasecmp(trim((string) $formname), 'referral') === 0);
 
 $patientid = empty($_REQUEST['patientid']) ? 0 : (0 + $_REQUEST['patientid']);
 if ($patientid < 0) {
@@ -39,6 +46,14 @@ $grparr = array();
 getLayoutProperties($formname, $grparr, '*');
 $lobj = $grparr[''];
 $formtitle = $lobj['grp_title'];
+if (!$lbf_suppress_row_borders && !empty($formtitle)) {
+    $lbf_suppress_row_borders = (stripos($formtitle, 'Prescribed Feeding') !== false)
+        || (stripos($formtitle, 'Feeding Regime') !== false)
+        || (stripos($formtitle, 'Ward Dietary') !== false)
+        || (stripos($formtitle, 'Dietary Requirements') !== false)
+        || (stripos($formtitle, 'Patient Transfer') !== false)
+        || (bool) preg_match('/^\s*(patient\s+)?referral(\s+form)?\s*$/i', (string) $formtitle);
+}
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
 }
@@ -214,6 +229,44 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
  border-color: #999999;
 }
 
+<?php if (!empty($lbf_suppress_row_borders)) { ?>
+/* Shared LBF: no grey row separators (print) — feeding / ward dietary / patient transfer / referral. */
+body.lbf-no-row-borders tr.RS,
+body.lbf-no-row-borders td.RS,
+body.lbf-no-row-borders tr.RO,
+body.lbf-no-row-borders td.RO,
+body.lbf-no-row-borders table tr,
+body.lbf-no-row-borders table td,
+body[class*="prescribed_feeding"] tr.RS,
+body[class*="prescribed_feeding"] td.RS,
+body[class*="prescribed_feeding"] tr.RO,
+body[class*="prescribed_feeding"] td.RO,
+body[class*="prescribed_feeding"] table tr,
+body[class*="prescribed_feeding"] table td,
+body[class*="feeding_regime"] table tr,
+body[class*="feeding_regime"] table td,
+body[class*="ward_dietary"] table tr,
+body[class*="ward_dietary"] table td,
+body[class*="dietary_requirements"] table tr,
+body[class*="dietary_requirements"] table td,
+body[class*="patient_transfer"] tr.RS,
+body[class*="patient_transfer"] td.RS,
+body[class*="patient_transfer"] tr.RO,
+body[class*="patient_transfer"] td.RO,
+body[class*="patient_transfer"] table tr,
+body[class*="patient_transfer"] table td,
+body[class*="lt_referral"] tr.RS,
+body[class*="lt_referral"] td.RS,
+body[class*="lt_referral"] tr.RO,
+body[class*="lt_referral"] td.RO,
+body[class*="lt_referral"] table tr,
+body[class*="lt_referral"] table td {
+ border-top: none !important;
+ border-bottom: none !important;
+ border-width: 0 !important;
+}
+<?php } ?>
+
 .ftitletable {
  width: 100%;
  margin: 0 0 8pt 0;
@@ -242,7 +295,13 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
 
 <?php if (!$PDF_OUTPUT) { ?>
 </head>
-<body bgcolor='#ffffff'>
+<?php
+$lbf_body_class = 'lbf-form-' . preg_replace('/[^A-Za-z0-9_-]/', '', $formname);
+if (!empty($lbf_suppress_row_borders)) {
+    $lbf_body_class .= ' lbf-no-row-borders';
+}
+?>
+<body bgcolor='#ffffff' class="<?php echo attr($lbf_body_class); ?>">
 <?php } ?>
 
 <form>
@@ -414,9 +473,9 @@ while ($frow = sqlFetchArray($fres)) {
     if (($cell_count + $titlecols + $datacols) > $CPR || $cell_count == 0) {
         end_row();
         // echo "  <tr style='height:30pt'>";
-        if (isOption($edit_options, 'RS')) {
+        if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
             echo " <tr class='RS'>";
-        } else if (isOption($edit_options, 'RO')) {
+        } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
             echo " <tr class='RO'>";
         } else {
             echo " <tr>";
@@ -458,9 +517,9 @@ while ($frow = sqlFetchArray($fres)) {
     // Handle starting of a new data cell.
     if ($datacols > 0) {
         end_cell();
-        if (isOption($edit_options, 'DS')) {
+        if (!$lbf_suppress_row_borders && isOption($edit_options, 'DS')) {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RS' style='";
-        } else if (isOption($edit_options, 'DO')) {
+        } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'DO')) {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RO' style='";
         } else {
             echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under' style='";
