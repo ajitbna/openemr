@@ -1053,7 +1053,7 @@ function generate_form_field($frow, $currvalue)
 
             $option_id = htmlspecialchars($option_id, ENT_QUOTES);
             echo "<td><input type='checkbox' name='check_{$field_id_esc}[$option_id_esc]'" .
-            " id='check_{$field_id_esc}[$option_id_esc]' class='form-control' value='1' $lbfonchange";
+            " id='check_{$field_id_esc}[$option_id_esc]' value='1' $lbfonchange";
             if ($restype) {
                 echo " checked";
             }

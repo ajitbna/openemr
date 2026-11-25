@@ -22,9 +22,8 @@ $lbf_suppress_row_borders = (stripos($formname, 'prescribed_feeding') !== false)
     || (stripos($formname, 'ward_dietary') !== false)
     || (stripos($formname, 'dietary_requirements') !== false)
     || (stripos($formname, 'patient_transfer') !== false)
-    || (stripos($formname, 'lt_referral') !== false)
-    || (stripos($formname, 'patient_referral') !== false)
-    || (strcasecmp(trim((string) $formname), 'referral') === 0);
+    || (stripos($formname, 'referral') !== false)
+    || (stripos($formname, 'lbtref') !== false);
 
 $patientid = empty($_REQUEST['patientid']) ? 0 : (0 + $_REQUEST['patientid']);
 if ($patientid < 0) {
@@ -53,7 +52,7 @@ if (!$lbf_suppress_row_borders && !empty($formtitle)) {
         || (stripos($formtitle, 'Ward Dietary') !== false)
         || (stripos($formtitle, 'Dietary Requirements') !== false)
         || (stripos($formtitle, 'Patient Transfer') !== false)
-        || (bool) preg_match('/^\s*(patient\s+)?referral(\s+form)?\s*$/i', (string) $formtitle);
+        || (bool) preg_match('/\breferral\b/i', (string) $formtitle);
 }
 if (!empty($lobj['grp_columns'])) {
     $CPR = intval($lobj['grp_columns']);
@@ -267,7 +266,13 @@ body[class*="patient_referral"] td.RS,
 body[class*="patient_referral"] tr.RO,
 body[class*="patient_referral"] td.RO,
 body[class*="patient_referral"] table tr,
-body[class*="patient_referral"] table td {
+body[class*="patient_referral"] table td,
+body[class*="referral"] tr.RS,
+body[class*="referral"] td.RS,
+body[class*="referral"] tr.RO,
+body[class*="referral"] td.RO,
+body[class*="referral"] table tr,
+body[class*="referral"] table td {
  border-top: none !important;
  border-bottom: none !important;
  border-width: 0 !important;

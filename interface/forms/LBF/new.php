@@ -89,9 +89,8 @@ $portalid = isset($_GET['portalid']) ? intval($_GET['portalid']) : 0;
 $lbf_ward_style = (stripos($formname, 'ward_dietary') !== false)
     || (stripos($formname, 'dietary_requirements') !== false)
     || (stripos($formname, 'patient_transfer') !== false)
-    || (stripos($formname, 'lt_referral') !== false)
-    || (stripos($formname, 'patient_referral') !== false)
-    || (strcasecmp(trim((string) $formname), 'referral') === 0);
+    || (stripos($formname, 'referral') !== false)
+    || (stripos($formname, 'lbtref') !== false);
 // Meal Satisfaction only: nuclear flex vertical center.
 $lbf_vcenter_fields = (stripos($formname, 'meal_satisfaction') !== false)
     || (stripos($formname, 'meal_sat') !== false)
@@ -133,15 +132,14 @@ if (!$lbf_ward_style && !empty($formtitle)) {
     $lbf_ward_style = (stripos($formtitle, 'Ward Dietary') !== false)
         || (stripos($formtitle, 'Dietary Requirements') !== false)
         || (stripos($formtitle, 'Patient Transfer') !== false)
-        || (bool) preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer/i', (string) $formtitle)
-        || (bool) preg_match('/^\s*(patient\s+)?referral(\s+form)?\s*$/i', (string) $formtitle);
+        || (bool) preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer|\breferral\b/i', (string) $formtitle);
 }
 if (!$lbf_ward_style && is_array($grparr)) {
     foreach ($grparr as $gprop) {
         if (empty($gprop['grp_title'])) {
             continue;
         }
-        if (preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer|referral\s*(information|details)/i', (string) $gprop['grp_title'])) {
+        if (preg_match('/ward\s*dietary|dietary\s*requirements|patient\s*transfer|referral\s*(information|details)|counter[\s-]*referral/i', (string) $gprop['grp_title'])) {
             $lbf_ward_style = true;
             break;
         }
@@ -474,15 +472,23 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             margin-right: 0 !important;
         }
 
-        <?php if (!empty($lbf_ward_style)) { ?>
         /*
-         * Ward Dietary Requirements multi-card reference:
-         * - Header OUTSIDE cards (blue bar, title left, actions right) on grey page
-         * - Each section/group = its OWN white rounded card with grey gap between
-         * Do NOT nest title/buttons inside a single outer white card.
+         * Ward Dietary / Patient Transfer / Referral multi-card reference:
+         * Scoped strictly under body.lbf-ward-style so it has zero effect on
+         * other LBFs while staying 100% available even if activated via JS fallback.
+         * - Grey page background (#e9ecef); header bar OUTSIDE cards on top
+         * - Blue #2a6ebb top bar: title + provider left, relocated actions right
+         * - Each group/section = its OWN white rounded .lbf-group-card with gap
          */
+        html:has(body.lbf-ward-style),
         html body.lbf-ward-style,
-        html body.lbf-ward-style.body_top,
+        html body.lbf-ward-style.body_top {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #e9ecef !important;
+            background-color: #e9ecef !important;
+            min-height: 100%;
+        }
         html body.lbf-ward-style.body_top > .container,
         html body.lbf-ward-style .container.lbf-card-flush,
         html body.lbf-ward-style form.lbf-form,
@@ -494,79 +500,143 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             box-shadow: none !important;
         }
         html body.lbf-ward-style .container.lbf-card-flush {
-            padding: 10px 14px !important;
+            padding: 12px 14px !important;
             max-width: none !important;
             width: 100% !important;
+            box-sizing: border-box !important;
         }
-        /* Header bar OUTSIDE cards */
+        html body.lbf-ward-style .container-responsive > .row::before,
+        html body.lbf-ward-style .container-responsive > .row::after {
+            display: none !important;
+        }
+        /* Header bar OUTSIDE cards, flush with left/right card edges */
         html body.lbf-ward-style .lbf-top-bar {
             display: flex !important;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px 14px !important;
+            flex-wrap: wrap !important;
             background: #2a6ebb !important;
             background-color: #2a6ebb !important;
-            color: #fff !important;
+            color: #ffffff !important;
             border-radius: 6px !important;
             padding: 10px 14px !important;
             margin: 0 0 16px 0 !important;
             width: 100% !important;
-            box-sizing: border-box;
+            box-sizing: border-box !important;
             border: 0 !important;
-            box-shadow: none !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-title,
+        html body.lbf-ward-style .lbf-top-bar .page-header {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 6px 14px !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            color: #ffffff !important;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-title h3,
-        html body.lbf-ward-style .lbf-top-bar .page-header,
         html body.lbf-ward-style .lbf-top-bar .page-header h3 {
             margin: 0 !important;
             padding: 0 !important;
             border: 0 !important;
-            color: #fff !important;
+            color: #ffffff !important;
             font-size: 16px !important;
-            font-weight: 600;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
             background: transparent !important;
         }
-        html body.lbf-ward-style .lbf-top-bar .lbf-top-title select {
-            color: #333 !important;
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-meta {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            font-size: 12.5px !important;
+            font-weight: 400 !important;
+            color: #e8f1fb !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-title select,
+        html body.lbf-ward-style .lbf-top-bar .page-header select {
+            color: #1f2937 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #c5d6ea !important;
+            border-radius: 4px !important;
+            padding: 3px 8px !important;
+            height: 28px !important;
+            font-size: 12.5px !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
         }
         html body.lbf-ward-style .lbf-top-actions {
-            margin-left: auto;
+            margin-left: auto !important;
+            flex-shrink: 0 !important;
         }
         html body.lbf-ward-style .lbf-top-actions .btn-group {
             float: none !important;
             display: inline-flex !important;
-            align-items: center;
-            gap: 4px;
-            flex-wrap: wrap;
+            align-items: center !important;
+            gap: 6px !important;
+            flex-wrap: wrap !important;
             background: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn,
-        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link {
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-default {
+            float: none !important;
+            margin: 0 !important;
+            margin-left: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #1f3b5b !important;
             border: 1px solid #d0dbe6 !important;
             border-radius: 4px !important;
             text-decoration: none !important;
-            padding: 4px 10px !important;
-            font-weight: 500;
+            padding: 5px 11px !important;
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+            font-weight: 500 !important;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+        }
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-save {
+            font-weight: 600 !important;
         }
         html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn:hover,
-        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link:hover {
-            background: #f0f4f8 !important;
-            background-color: #f0f4f8 !important;
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link:hover,
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-default:hover {
+            background: #eef4fa !important;
+            background-color: #eef4fa !important;
             color: #132840 !important;
+            border-color: #b7c9dc !important;
         }
-        html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated {
+        html body.lbf-ward-style .lbf-top-bar .lbf-top-actions select {
+            color: #1f2937 !important;
+            background: #ffffff !important;
+            border: 1px solid #c5d6ea !important;
+            border-radius: 4px !important;
+            padding: 3px 6px !important;
+            height: 28px !important;
+            font-size: 12.5px !important;
+        }
+        html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated,
+        html body.lbf-ward-style br.lbf-actions-spacer-hidden {
             display: none !important;
         }
-        /* Stack of SEPARATE white cards (gap must show grey) */
+        /* Stack of SEPARATE white rounded cards (grey #e9ecef gap between each card) */
         html body.lbf-ward-style .lbf-cards-stack {
-            display: block;
-            width: 100%;
+            display: block !important;
+            width: 100% !important;
             background: transparent !important;
+            background-color: transparent !important;
         }
         html body.lbf-ward-style .lbf-group-card {
             display: block !important;
@@ -574,7 +644,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             background-color: #ffffff !important;
             border: 1px solid #c5ced8 !important;
             border-radius: 8px !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
             padding: 14px 16px 16px 16px !important;
             margin: 0 0 18px 0 !important;
             width: 100% !important;
@@ -582,20 +652,45 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             float: none !important;
             clear: both !important;
         }
+        html body.lbf-ward-style .lbf-group-card:last-child {
+            margin-bottom: 4px !important;
+        }
         html body.lbf-ward-style .lbf-group-card-header {
-            display: block !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
             margin: 0 0 12px 0 !important;
             padding: 0 0 8px 0 !important;
             border: 0 !important;
             border-bottom: 1px solid #e6ebf0 !important;
             background: transparent !important;
+            background-color: transparent !important;
             font-weight: 700 !important;
-            font-size: 13px !important;
+            font-size: 13.5px !important;
+            line-height: 1.35 !important;
             color: #1f3b5b !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header .lbf-group-card-title,
+        html body.lbf-ward-style .lbf-group-card-header > span {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            color: #1f3b5b !important;
+            font-size: 13.5px !important;
+            font-weight: 700 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card-header b {
+            color: #1f3b5b !important;
+            font-weight: 700 !important;
         }
         html body.lbf-ward-style .lbf-group-card-header input[type=checkbox],
         html body.lbf-ward-style .lbf-group-card-header .lbf-group-toggle {
-            margin-right: 6px !important;
+            margin: 0 !important;
+            vertical-align: middle !important;
+            flex-shrink: 0 !important;
+            cursor: pointer;
         }
         html body.lbf-ward-style .lbf-group-card div.section,
         html body.lbf-ward-style .lbf-group-card .lbf-group-card-body,
@@ -604,24 +699,152 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             margin: 0 !important;
             padding: 0 !important;
             background: transparent !important;
+            background-color: transparent !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
         }
         html body.lbf-ward-style table.lbfdata {
             width: 100% !important;
+            border-collapse: collapse !important;
             background: transparent !important;
+            background-color: transparent !important;
+            margin: 0 !important;
         }
         html body.lbf-ward-style table.lbfdata > tbody > tr > td,
-        html body.lbf-ward-style table.lbfdata td,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > th,
         .table > tbody > tr > td.lbf-ward-cell {
+            padding: 6px 8px !important;
             vertical-align: middle !important;
             background: transparent !important;
+            background-color: transparent !important;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+            color: #1f2937 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td:first-child {
+            padding-left: 0 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required {
+            font-weight: 600 !important;
+            white-space: nowrap;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold:not([colspan]),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required:not([colspan]),
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.bold[colspan="1"],
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required[colspan="1"] {
+            width: 1% !important;
+            padding-right: 14px !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required,
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.required b {
+            color: #b42318 !important;
+        }
+        html body.lbf-ward-style table.lbfdata > tbody > tr > td.lbf-group-subtitle {
+            color: #4a607a !important;
+            font-size: 12.5px !important;
+            font-weight: 600 !important;
+            padding-top: 2px !important;
+            padding-bottom: 6px !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata td table {
+            width: auto !important;
+            max-width: 100% !important;
+            background: transparent !important;
+            margin: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card table.lbfdata td table td {
+            padding: 3px 14px 3px 0 !important;
+            vertical-align: middle !important;
+            background: transparent !important;
+            font-size: 13px !important;
+        }
+        /* Unified form controls inside cards (beats style_light.css harsh dark borders) */
+        html body.lbf-ward-style .lbf-group-card input[type="text"],
+        html body.lbf-ward-style .lbf-group-card input[type="number"],
+        html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="email"],
+        html body.lbf-ward-style .lbf-group-card input[type="tel"],
+        html body.lbf-ward-style .lbf-group-card select,
+        html body.lbf-ward-style .lbf-group-card textarea {
+            background-color: #ffffff !important;
+            border: 1px solid #c5ced8 !important;
+            border-radius: 4px !important;
+            padding: 5px 8px !important;
+            margin: 0 !important;
+            font-size: 13px !important;
+            color: #1f2937 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="text"],
+        html body.lbf-ward-style .lbf-group-card input[type="number"],
+        html body.lbf-ward-style .lbf-group-card input[type="date"],
+        html body.lbf-ward-style .lbf-group-card input[type="email"],
+        html body.lbf-ward-style .lbf-group-card input[type="tel"],
+        html body.lbf-ward-style .lbf-group-card select {
+            min-height: 30px !important;
+            height: auto !important;
+            line-height: 1.35 !important;
+            display: inline-block !important;
+        }
+        html body.lbf-ward-style .lbf-group-card textarea {
+            min-height: 68px !important;
+            line-height: 1.4 !important;
+            resize: vertical;
+            display: block !important;
+            width: 100% !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="text"]:focus,
+        html body.lbf-ward-style .lbf-group-card select:focus,
+        html body.lbf-ward-style .lbf-group-card textarea:focus {
+            border-color: #2a6ebb !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(42, 110, 187, 0.15) !important;
+        }
+        html body.lbf-ward-style .lbf-group-card input[type="radio"],
+        html body.lbf-ward-style .lbf-group-card input[type="checkbox"] {
+            margin: 0 !important;
+            vertical-align: middle !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+        }
+        html body.lbf-ward-style .lbf-group-card label.lbf-radio-option,
+        html body.lbf-ward-style .lbf-group-card label.lbf-checkbox-option {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            margin: 0 !important;
+            font-weight: 400 !important;
+            color: #1f2937 !important;
+            white-space: nowrap;
+        }
+        html body.lbf-ward-style .lbf-group-card button,
+        html body.lbf-ward-style .lbf-group-card input[type="button"] {
+            background: #f8fafc !important;
+            background-color: #f8fafc !important;
+            color: #1f3b5b !important;
+            border: 1px solid #c5ced8 !important;
+            border-radius: 4px !important;
+            padding: 4px 10px !important;
+            font-size: 12.5px !important;
+            font-weight: 500 !important;
+            cursor: pointer;
+        }
+        html body.lbf-ward-style .lbf-group-card button:hover,
+        html body.lbf-ward-style .lbf-group-card input[type="button"]:hover {
+            background: #eef4fa !important;
+            border-color: #9cb2c9 !important;
         }
         /* Kill legacy blue section box if still present outside cards */
         html body.lbf-ward-style div.section:not(.lbf-group-card-body) {
             border: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: transparent !important;
         }
-        <?php } ?>
 
         <?php if (!empty($lbf_vcenter_fields)) { ?>
         /*
@@ -792,50 +1015,40 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
             // Ward Dietary multi-card layout — Ward Dietary, Patient Transfer, Referral.
             (function () {
                 var phpFlag = <?php echo !empty($lbf_ward_style) ? 'true' : 'false'; ?>;
-                var SECTION_TITLE_RE = /^(WARD\s*INFORMATION|PATIENT\s*DIETARY\s*LIST|TRANSFER\s*INFORMATION|TRANSFER\s*DETAILS|CLINICAL\s*STATUS|CLINICAL\s*INFORMATION|CLINICAL\s*DETAILS|CLINICAL\s*SUMMARY|CLINICAL\s*NOTES|CLINICAL\s*HISTORY|PATIENT\s*INFORMATION|PATIENT\s*DETAILS|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|REFERRAL\s*SUMMARY|REFERRAL\s*REASON|REASON\s*FOR\s*REFERRAL|REFERRING\s*PROVIDER|REFERRING\s*DETAILS|REFERRED\s*BY|REFERRED\s*TO|RECEIVING\s*PROVIDER|RECEIVING\s*DEPARTMENT|PROVIDER\s*INFORMATION|PROVIDER\s*DETAILS|COUNTER[\s-]*REFERRAL|FOLLOW[\s-]*UP(\s*INFORMATION|\s*DETAILS)?|ASSESSMENT|DIAGNOSIS|RECOMMENDATIONS|ADDITIONAL\s*INFORMATION|ADDITIONAL\s*NOTES|ATTACHMENTS|AUTHORIZATION|SIGNATURES)$/i;
+                var SECTION_TITLE_RE = /^(WARD\s*INFORMATION|PATIENT\s*DIETARY\s*LIST|TRANSFER\s*INFORMATION|TRANSFER\s*DETAILS|CLINICAL\s*STATUS|CLINICAL\s*INFORMATION|CLINICAL\s*DETAILS|CLINICAL\s*SUMMARY|CLINICAL\s*NOTES|CLINICAL\s*HISTORY|PATIENT\s*INFORMATION|PATIENT\s*DETAILS|PATIENT\s*CONDITION|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|REFERRAL\s*SUMMARY|REFERRAL\s*SOURCE|REFERRAL\s*TYPE|REFERRAL\s*REASON|REASON\s*FOR\s*REFERRAL|REFERRING\s*PROVIDER|REFERRING\s*FACILITY|REFERRING\s*DETAILS|REFERRED\s*BY|REFERRED\s*TO|RECEIVING\s*PROVIDER|RECEIVING\s*FACILITY|RECEIVING\s*DEPARTMENT|SPECIALIST\s*DETAILS|PROVIDER\s*INFORMATION|PROVIDER\s*DETAILS|COUNTER[\s-]*REFERRAL|FOLLOW[\s-]*UP(\s*INFORMATION|\s*DETAILS)?|ASSESSMENT|DIAGNOSIS|PROVISIONAL\s*DIAGNOSIS|TREATMENT\s*SUMMARY|MEDICATIONS|INVESTIGATIONS|VITALS|RECOMMENDATIONS|APPOINTMENT\s*DETAILS|ADDITIONAL\s*INFORMATION|ADDITIONAL\s*NOTES|ATTACHMENTS(\s*(&|AND)\s*DOCUMENTS)?|DOCUMENTS|AUTHORIZATION|SIGNATURES)$/i;
 
                 function looksLikeWardStyle() {
                     if (phpFlag) { return true; }
                     var href = String(window.location.href || '');
-                    if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral/i.test(href)) { return true; }
+                    if (/[?&]formname=[^&#]*(ward_dietary|dietary_requirements|patient_transfer|referral|lbtref)/i.test(href)) {
+                        return true;
+                    }
+                    if (/ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral|lbtref/i.test(href)) {
+                        return true;
+                    }
                     var h3 = document.querySelector('.page-header h3, .lbf-top-title h3');
                     if (h3) {
                         var h3Txt = (h3.innerText || h3.textContent || '').replace(/\s+/g, ' ').trim();
-                        if (/^(patient\s+)?referral(\s+form)?(\s+for\b|$)/i.test(h3Txt)) { return true; }
+                        var titlePart = h3Txt.split(/\s+for\s+/i)[0] || h3Txt;
+                        if (/ward\s*dietary|dietary\s*requirements|patient\s*transfer|\breferral\b/i.test(titlePart)) {
+                            return true;
+                        }
                     }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
-                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS/i.test(txt);
+                    return /WARD\s*DIETARY|DIETARY\s*REQUIREMENTS|PATIENT\s*TRANSFER|TRANSFER\s*INFORMATION|CLINICAL\s*STATUS|REFERRAL\s*INFORMATION|REFERRAL\s*DETAILS|COUNTER[\s-]*REFERRAL/i.test(txt);
                 }
 
-                function ensureWardCss() {
-                    if (document.getElementById('lbf-ward-cards-nuke')) { return; }
-                    var s = document.createElement('style');
-                    s.id = 'lbf-ward-cards-nuke';
-                    s.type = 'text/css';
-                    s.appendChild(document.createTextNode(
-                        'html body.lbf-ward-style,html body.lbf-ward-style.body_top,' +
-                        'html body.lbf-ward-style .container,html body.lbf-ward-style form.lbf-form,' +
-                        'html body.lbf-ward-style .container-responsive,html body.lbf-ward-style .row,' +
-                        'html body.lbf-ward-style .col-xs-12{background:#e9ecef!important;box-shadow:none!important;}' +
-                        'html body.lbf-ward-style .lbf-top-bar{display:flex!important;align-items:center;justify-content:space-between;background:#2a6ebb!important;color:#fff!important;' +
-                        'border-radius:6px!important;padding:10px 14px!important;margin:0 0 16px!important;width:100%!important;}' +
-                        'html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn,' +
-                        'html body.lbf-ward-style .lbf-top-bar .lbf-top-actions .btn-link{background:#fff!important;color:#1f3b5b!important;border:1px solid #d0dbe6!important;border-radius:4px!important;text-decoration:none!important;padding:4px 10px!important;}' +
-                        'html body.lbf-ward-style .lbf-group-card{display:block!important;background:#fff!important;' +
-                        'border:1px solid #c5ced8!important;border-radius:8px!important;' +
-                        'box-shadow:0 1px 2px rgba(0,0,0,.06)!important;padding:14px 16px 16px!important;' +
-                        'margin:0 0 18px!important;width:100%!important;clear:both!important;}' +
-                        'html body.lbf-ward-style .lbf-group-card-header{display:block!important;font-weight:700!important;' +
-                        'color:#1f3b5b!important;border-bottom:1px solid #e6ebf0!important;padding:0 0 8px!important;margin:0 0 12px!important;}' +
-                        'html body.lbf-ward-style .lbf-actions-col.lbf-actions-relocated{display:none!important;}' +
-                        'html body.lbf-ward-style .lbf-group-card div.section{border:0!important;margin:0!important;padding:0!important;}'
-                    ));
-                    (document.head || document.documentElement).appendChild(s);
+                function ensureWardHtmlBg() {
+                    if (document.documentElement) {
+                        document.documentElement.style.setProperty('background-color', '#e9ecef', 'important');
+                        document.documentElement.style.setProperty('margin', '0', 'important');
+                        document.documentElement.style.setProperty('padding', '0', 'important');
+                    }
                 }
 
                 function titleText(el) {
                     if (!el) { return ''; }
-                    var t = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+                    var t = (el.innerText || el.textContent || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
                     // Strip leading checkbox artifacts
                     return t.replace(/^[\u2610\u2611]\s*/, '').trim();
                 }
@@ -866,7 +1079,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
 
                 function isTableSectionHeadingRow(tr) {
                     if (!tr || tr.nodeType !== 1) { return false; }
-                    if (tr.querySelector && tr.querySelector('input, select, textarea, button')) {
+                    if (tr.querySelector && tr.querySelector('input, select, textarea, button, a, canvas')) {
                         return false;
                     }
                     var whole = cleanHeadingLabel(titleText(tr));
@@ -879,23 +1092,34 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (nonEmpty.length !== 1) { return false; }
                     var cell = nonEmpty[0];
                     if (isSectionTitleNode(cell) || SECTION_TITLE_RE.test(whole)) { return true; }
-                    // Structural fallback: single-cell spanning heading row (subtitle / SP bold / h1-h6)
-                    if (whole.length <= 65 && !/[.?]$/.test(whole)) {
-                        if (cell.querySelector && cell.querySelector('h1, h2, h3, h4, h5, h6')) {
-                            return true;
-                        }
-                        var colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
-                        var spansRow = (colspan >= 2) || (cells.length === 1);
-                        var st = (cell.getAttribute('style') || '') + ' ' + (cell.className || '');
-                        var isBlueSubtitle = /0000ff|color:\s*blue/i.test(st);
-                        var isBoldHeading = !!(
-                            (cell.classList && cell.classList.contains('bold'))
-                            || (cell.querySelector && cell.querySelector('b, strong'))
-                            || /font-weight\s*:\s*(bold|[6-9]00)/i.test(st)
-                        );
-                        if (spansRow && (isBlueSubtitle || isBoldHeading)) {
-                            return true;
-                        }
+                    // Do not split on instructional static sentences or questions.
+                    if (whole.length > 65 || /[.?]$/.test(whole)) { return false; }
+                    if (cell.querySelector && cell.querySelector('h1, h2, h3, h4, h5, h6')) {
+                        return true;
+                    }
+                    var rowType = (tr.getAttribute('data-lbf-row-type') || '').toLowerCase();
+                    var colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    var spansRow = (colspan >= 2) || (cells.length === 1);
+                    var st = (cell.getAttribute('style') || '') + ' ' + (cell.className || '');
+                    // Descriptive group subtitle (grp_subtitle) stays inside its card unless it matches a known section title.
+                    if (cell.classList && cell.classList.contains('lbf-group-subtitle')) {
+                        return false;
+                    }
+                    var isBlueSubtitle = /0000ff|color:\s*blue/i.test(st);
+                    var isBoldHeading = !!(
+                        (cell.classList && cell.classList.contains('bold'))
+                        || (cell.querySelector && cell.querySelector('b, strong'))
+                        || /font-weight\s*:\s*(bold|[6-9]00)/i.test(st)
+                    );
+                    var isAllCapsHeading = (whole.length >= 4 && whole === whole.toUpperCase() && /[A-Z]/.test(whole));
+                    if (rowType === 'sp' && (isBoldHeading || isBlueSubtitle || isAllCapsHeading)) {
+                        return true;
+                    }
+                    if (rowType === 'static' && (isBoldHeading || isBlueSubtitle || isAllCapsHeading)) {
+                        return true;
+                    }
+                    if (spansRow && (isBlueSubtitle || isBoldHeading)) {
+                        return true;
                     }
                     return false;
                 }
@@ -914,7 +1138,6 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (titleNode) {
                         var header = document.createElement('div');
                         header.className = 'lbf-group-card-header';
-                        // If title is a table row/cell or plain string, use clean bold text.
                         if (typeof titleNode === 'string') {
                             var hs = document.createElement('b');
                             hs.textContent = cleanHeadingLabel(titleNode);
@@ -924,6 +1147,9 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             h.textContent = cleanHeadingLabel(titleText(titleNode));
                             header.appendChild(h);
                         } else {
+                            if (titleNode.classList && !titleNode.classList.contains('lbf-group-card-title')) {
+                                titleNode.classList.add('lbf-group-card-title');
+                            }
                             header.appendChild(titleNode);
                         }
                         card.appendChild(header);
@@ -944,7 +1170,6 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     if (stack) { return stack; }
                     stack = document.createElement('div');
                     stack.className = 'lbf-cards-stack';
-                    // Insert after top bar if present, else at start of responsive row content.
                     var topBar = form.querySelector('.lbf-top-bar');
                     var row = form.querySelector('.container-responsive > .row') || form;
                     if (topBar && topBar.parentNode) {
@@ -967,26 +1192,30 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             breaks.push(r);
                         }
                     }
-                    if (breaks.length < 2) { return null; }
+                    if (breaks.length === 0) { return null; }
+                    var leadRows = [];
+                    for (var p = 0; p < breaks[0]; p++) {
+                        if (!isEmptySpacerRow(rows[p])) {
+                            leadRows.push(rows[p]);
+                        }
+                    }
+                    // Split when there are 2+ headings, OR 1 heading with non-empty leading rows before it,
+                    // OR 1 leading heading on row 0 inside an untitled card/table.
+                    var shouldSplit = (breaks.length >= 2)
+                        || (breaks.length === 1 && leadRows.length > 0)
+                        || (breaks.length === 1 && leadRows.length === 0 && !existingHeaderTitle);
+                    if (!shouldSplit) { return null; }
+
                     var cards = [];
-                    // Preserve any non-empty rows appearing before the first heading break.
-                    if (breaks[0] > 0) {
-                        var leadRows = [];
-                        for (var p = 0; p < breaks[0]; p++) {
-                            if (!isEmptySpacerRow(rows[p])) {
-                                leadRows.push(rows[p]);
-                            }
+                    if (leadRows.length > 0) {
+                        var leadTable = table.cloneNode(false);
+                        var leadTb = document.createElement('tbody');
+                        leadTable.appendChild(leadTb);
+                        leadTable.className = table.className;
+                        for (var lp = 0; lp < leadRows.length; lp++) {
+                            leadTb.appendChild(leadRows[lp]);
                         }
-                        if (leadRows.length > 0) {
-                            var leadTable = table.cloneNode(false);
-                            var leadTb = document.createElement('tbody');
-                            leadTable.appendChild(leadTb);
-                            leadTable.className = table.className;
-                            for (var lp = 0; lp < leadRows.length; lp++) {
-                                leadTb.appendChild(leadRows[lp]);
-                            }
-                            cards.push(makeCard(existingHeaderTitle || null, [leadTable]));
-                        }
+                        cards.push(makeCard(existingHeaderTitle || null, [leadTable]));
                     }
                     for (var b = 0; b < breaks.length; b++) {
                         var start = breaks[b];
@@ -1010,15 +1239,17 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 }
 
                 function wrapExistingGroupCards(form, stack) {
-                    var existing = form.querySelectorAll('.lbf-group-card');
+                    var existing = Array.prototype.slice.call(form.querySelectorAll('.lbf-group-card'));
                     for (var i = 0; i < existing.length; i++) {
-                        stack.appendChild(existing[i]);
+                        if (existing[i].parentNode !== stack) {
+                            stack.appendChild(existing[i]);
+                        }
                     }
                     return existing.length;
                 }
 
                 function wrapSectionDivs(form, stack) {
-                    var sections = form.querySelectorAll('div.section');
+                    var sections = Array.prototype.slice.call(form.querySelectorAll('div.section'));
                     var count = 0;
                     for (var i = 0; i < sections.length; i++) {
                         var sec = sections[i];
@@ -1028,7 +1259,9 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                             prev = prev.previousSibling;
                         }
                         while (prev && prev.nodeType === 1 && /^(BR|HR)$/i.test(prev.tagName || '')) {
+                            var dead = prev;
                             prev = prev.previousSibling;
+                            if (dead.parentNode) { dead.parentNode.removeChild(dead); }
                             while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
                                 prev = prev.previousSibling;
                             }
@@ -1043,14 +1276,13 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 }
 
                 function rebuildFromSectionTitles(form, stack) {
-                    // Handles single-table case with multiple bold/subtitle section headings.
-                    var tables = form.querySelectorAll('table.lbfdata');
+                    // Split any table.lbfdata that contains internal section headings,
+                    // inserting replacement cards in-place to preserve document order.
+                    var tables = Array.prototype.slice.call(form.querySelectorAll('table.lbfdata'));
                     var built = 0;
                     for (var t = 0; t < tables.length; t++) {
                         var table = tables[t];
-                        if (table.closest && table.closest('.lbf-group-card-body') && stack.querySelectorAll('.lbf-group-card').length >= 2) {
-                            continue;
-                        }
+                        if (!table.parentNode) { continue; }
                         var host = table.closest ? table.closest('.lbf-group-card') : null;
                         var existingHeaderText = '';
                         if (host) {
@@ -1061,23 +1293,28 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         }
                         var cards = splitTableBySectionTitles(table, existingHeaderText);
                         if (!cards) { continue; }
-                        for (var c = 0; c < cards.length; c++) {
-                            stack.appendChild(cards[c]);
-                            built++;
-                        }
-                        if (host && host.classList && host.classList.contains('lbf-group-card')) {
-                            if (host.parentNode) { host.parentNode.removeChild(host); }
-                        } else if (table.parentNode) {
-                            table.parentNode.removeChild(table);
+                        if (host && host.parentNode) {
+                            for (var c = 0; c < cards.length; c++) {
+                                host.parentNode.insertBefore(cards[c], host);
+                                built++;
+                            }
+                            host.parentNode.removeChild(host);
+                        } else {
+                            for (var c2 = 0; c2 < cards.length; c2++) {
+                                stack.appendChild(cards[c2]);
+                                built++;
+                            }
+                            if (table.parentNode) {
+                                table.parentNode.removeChild(table);
+                            }
                         }
                     }
                     return built;
                 }
 
                 function ensureFallbackCard(form, stack) {
-                    // If a ward-style form has an unnamed group (bare table.lbfdata), still wrap it in a card.
-                    if (stack.querySelectorAll('.lbf-group-card').length > 0) { return; }
-                    var tables = form.querySelectorAll('table.lbfdata');
+                    // Wrap any bare table.lbfdata outside cards into its own card.
+                    var tables = Array.prototype.slice.call(form.querySelectorAll('table.lbfdata'));
                     for (var t = 0; t < tables.length; t++) {
                         var table = tables[t];
                         if (table.closest && table.closest('.lbf-group-card')) { continue; }
@@ -1093,23 +1330,88 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
                 }
 
+                function pruneEmptyCards(stack) {
+                    var cards = Array.prototype.slice.call(stack.querySelectorAll('.lbf-group-card'));
+                    for (var i = 0; i < cards.length; i++) {
+                        var body = cards[i].querySelector('.lbf-group-card-body');
+                        if (!body) { continue; }
+                        var hasControls = body.querySelector('input, select, textarea, button, img, canvas, a');
+                        if (!hasControls && !titleText(body)) {
+                            if (cards[i].parentNode) {
+                                cards[i].parentNode.removeChild(cards[i]);
+                            }
+                        }
+                    }
+                }
+
+                function normalizeTopBarTitle(topBar) {
+                    var titleBox = topBar.querySelector('.lbf-top-title, .page-header');
+                    if (!titleBox) { return; }
+                    titleBox.classList.add('lbf-top-title');
+                    // Wrap any loose Provider / Case text + select nodes into .lbf-top-meta for clean inline layout.
+                    if (!titleBox.querySelector('.lbf-top-meta')) {
+                        var h3 = titleBox.querySelector('h3');
+                        var extras = [];
+                        var node = h3 ? h3.nextSibling : null;
+                        while (node) {
+                            var next = node.nextSibling;
+                            if (node.nodeType === 1 || (node.nodeType === 3 && String(node.textContent || '').replace(/\u00a0/g, ' ').trim() !== '')) {
+                                extras.push(node);
+                            } else if (node.nodeType === 3) {
+                                titleBox.removeChild(node);
+                            }
+                            node = next;
+                        }
+                        if (extras.length > 0) {
+                            var meta = document.createElement('span');
+                            meta.className = 'lbf-top-meta';
+                            for (var i = 0; i < extras.length; i++) {
+                                if (extras[i].nodeType === 3) {
+                                    extras[i].textContent = String(extras[i].textContent || '').replace(/\u00a0/g, ' ').trim();
+                                }
+                                meta.appendChild(extras[i]);
+                            }
+                            titleBox.appendChild(meta);
+                        }
+                    }
+                }
+
                 function moveActionsToTopBar(form) {
                     var topBar = form.querySelector('.lbf-top-bar') || document.querySelector('.lbf-top-bar');
                     if (!topBar) { return; }
+                    normalizeTopBarTitle(topBar);
                     var actionsSlot = topBar.querySelector('.lbf-top-actions');
                     if (!actionsSlot) {
                         actionsSlot = document.createElement('div');
                         actionsSlot.className = 'lbf-top-actions';
+                        actionsSlot.setAttribute('aria-label', 'Form actions');
                         topBar.appendChild(actionsSlot);
                     }
                     var actionsCol = form.querySelector('.lbf-actions-col') || document.querySelector('.lbf-actions-col');
                     if (!actionsCol) { return; }
                     var btnGroup = actionsCol.querySelector('.btn-group');
                     if (!btnGroup) { return; }
+                    // Strip raw &nbsp; / whitespace text nodes inside .btn-group so flex gap is uniform.
+                    var child = btnGroup.firstChild;
+                    while (child) {
+                        var nextChild = child.nextSibling;
+                        if (child.nodeType === 3 && !String(child.textContent || '').replace(/\u00a0/g, ' ').trim()) {
+                            btnGroup.removeChild(child);
+                        }
+                        child = nextChild;
+                    }
                     if (!actionsSlot.contains(btnGroup)) {
                         actionsSlot.appendChild(btnGroup);
                     }
                     actionsCol.classList.add('lbf-actions-relocated');
+                    // Hide stray <br> immediately preceding the relocated actions row.
+                    var prev = actionsCol.previousSibling;
+                    while (prev && prev.nodeType === 3 && !String(prev.textContent || '').trim()) {
+                        prev = prev.previousSibling;
+                    }
+                    if (prev && prev.nodeType === 1 && /^BR$/i.test(prev.tagName || '')) {
+                        prev.classList.add('lbf-actions-spacer-hidden');
+                    }
                     var cancelBtns = actionsSlot.querySelectorAll('.btn-cancel');
                     for (var b = 0; b < cancelBtns.length; b++) {
                         if (/cancel/i.test(cancelBtns[b].textContent || '')) {
@@ -1131,9 +1433,19 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                     }
                 }
 
+                function styleWardCells(root) {
+                    var scope = root || document;
+                    var cells = scope.querySelectorAll('table.lbfdata td, table.lbfdata th');
+                    for (var c = 0; c < cells.length; c++) {
+                        cells[c].classList.add('lbf-ward-cell');
+                        cells[c].setAttribute('valign', 'middle');
+                        cells[c].style.setProperty('vertical-align', 'middle', 'important');
+                    }
+                }
+
                 function applyWardStyle() {
                     if (!looksLikeWardStyle()) { return; }
-                    ensureWardCss();
+                    ensureWardHtmlBg();
                     if (document.body) {
                         document.body.classList.add('lbf-ward-style');
                         document.body.setAttribute('data-lbf-ward-style', '1');
@@ -1144,7 +1456,7 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         form.setAttribute('data-lbf-ward-style', '1');
                         if (form.classList) { form.classList.add('lbf-form'); }
 
-                        // Promote page-header column to top bar if needed.
+                        // Promote page-header column to top bar if JS fallback activated ward style.
                         var headerCol = form.querySelector('.lbf-page-header-col');
                         if (headerCol && !headerCol.classList.contains('lbf-top-bar')) {
                             headerCol.classList.add('lbf-top-bar');
@@ -1153,23 +1465,14 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         moveActionsToTopBar(form);
 
                         var stack = ensureCardsStack(form);
-                        var n = wrapExistingGroupCards(form, stack);
-                        if (n < 2) {
-                            n += wrapSectionDivs(form, stack);
-                        }
-                        // If still < 2 cards, split tables on section headings.
-                        if (stack.querySelectorAll('.lbf-group-card').length < 2) {
-                            rebuildFromSectionTitles(form, stack);
-                        }
+                        wrapExistingGroupCards(form, stack);
+                        wrapSectionDivs(form, stack);
+                        rebuildFromSectionTitles(form, stack);
                         ensureFallbackCard(form, stack);
+                        pruneEmptyCards(stack);
                         forceSectionsOpen(form);
                     }
-                    var cells = document.querySelectorAll('table.lbfdata td, table.lbfdata th');
-                    for (var c = 0; c < cells.length; c++) {
-                        cells[c].classList.add('lbf-ward-cell');
-                        cells[c].setAttribute('valign', 'middle');
-                        cells[c].style.setProperty('vertical-align', 'middle', 'important');
-                    }
+                    styleWardCells(document);
                 }
 
                 applyWardStyle();
@@ -1258,7 +1561,8 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                         return true;
                     }
                     var href = String(window.location.href || '');
-                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral/i.test(href)) { return true; }
+                    if (/[?&]formname=[^&#]*(prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|referral|lbtref)/i.test(href)) { return true; }
+                    if (/prescribed_feeding|feeding_regime|ward_dietary|dietary_requirements|patient_transfer|lt_referral|patient_referral|lbtref/i.test(href)) { return true; }
                     var txt = (document.body && document.body.innerText) ? document.body.innerText : '';
                     var hasRoute = /Route/i.test(txt);
                     var hasVolume = /Volume/i.test(txt);
@@ -1316,11 +1620,19 @@ if (!empty($_POST['bn_save']) || !empty($_POST['bn_save_print']) || !empty($_POS
                 }
                 function afterClone(node) {
                     stripRowBorders(node || document);
+                    var isWard = document.body && document.body.classList && document.body.classList.contains('lbf-ward-style');
                     var rows = document.querySelectorAll('form.lbf-form tr, .section table tr, table.lbfdata tr');
                     for (var r = 0; r < rows.length; r++) {
                         nukeEl(rows[r]);
                         var tds = rows[r].cells || rows[r].querySelectorAll('td, th');
-                        for (var d = 0; d < tds.length; d++) { nukeEl(tds[d]); }
+                        for (var d = 0; d < tds.length; d++) {
+                            nukeEl(tds[d]);
+                            if (isWard) {
+                                tds[d].classList.add('lbf-ward-cell');
+                                tds[d].setAttribute('valign', 'middle');
+                                tds[d].style.setProperty('vertical-align', 'middle', 'important');
+                            }
+                        }
                     }
                 }
                 stripRowBorders(document);
@@ -1782,8 +2094,13 @@ if ($from_issue_form) {
                     $form_provider_id = empty($firow['provider_id']) ? 0 : intval($firow['provider_id']);
 
                     // Provider selector.
-                    echo "&nbsp;&nbsp;";
-                    echo xlt('Provider') . ": ";
+                    if (!empty($lbf_ward_style)) {
+                        echo "<span class='lbf-top-meta'>";
+                        echo "<span>" . xlt('Provider') . ":</span> ";
+                    } else {
+                        echo "&nbsp;&nbsp;";
+                        echo xlt('Provider') . ": ";
+                    }
                     // TBD: Refactor this function out of the FeeSheetHTML class as that is not the best place for it.
                     echo FeeSheetHtml::genProviderSelect('form_provider_id', '-- ' . xl("Please Select") . ' --', $form_provider_id);
 
@@ -1791,7 +2108,9 @@ if ($from_issue_form) {
                     // We skip this if in an issue form tab because removing and adding visit form tabs is
                     // beyond the current scope of that code.
                     if (!empty($LBF_ISSUE_TYPE) && !$from_issue_form) {
-                        echo "&nbsp;&nbsp;";
+                        if (empty($lbf_ward_style)) {
+                            echo "&nbsp;&nbsp;";
+                        }
                         $query = "SELECT id, title, date, begdate FROM lists WHERE pid = ? AND type = ? " .
                             "ORDER BY COALESCE(begdate, date) DESC, id DESC";
                         $ires = sqlStatement($query, array($pid, $LBF_ISSUE_TYPE));
@@ -1807,6 +2126,9 @@ if ($from_issue_form) {
                             echo ">" . text("$issuedate " . $irow['title']) . "</option>\n";
                         }
                         echo "</select>\n";
+                    }
+                    if (!empty($lbf_ward_style)) {
+                        echo "</span>";
                     }
                     ?>
                 </div>
@@ -2030,7 +2352,8 @@ if ($from_issue_form) {
                         $sub_border = !empty($lbf_suppress_row_borders)
                             ? "border:0!important;border-top:0!important;border-bottom:0!important;"
                             : '';
-                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold' style='color:#0000ff;" . $sub_border . "' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
+                        $sub_color = !empty($lbf_ward_style) ? '' : 'color:#0000ff;';
+                        echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold lbf-group-subtitle' style='" . $sub_color . $sub_border . "' colspan='" . attr($CPR) . "'>" . text($subtitle) . "</td></tr>\n";
                         echo "<tr" . ($sub_border ? " style='" . $sub_border . "'" : "") . "><td class='bold' style='height:4pt;" . $sub_border . "' colspan='" . attr($CPR) . "'></td></tr>\n";
                     }
 
@@ -2093,15 +2416,21 @@ if ($from_issue_form) {
 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0) {
                     end_row();
+                    $lbf_row_type_attr = '';
+                    if (isOption($edit_options, 'SP')) {
+                        $lbf_row_type_attr = " data-lbf-row-type='sp'";
+                    } else if ($data_type == 31) {
+                        $lbf_row_type_attr = " data-lbf-row-type='static'";
+                    }
                     // Skip RS/RO border classes when this form suppresses row separators.
                     if (!$lbf_suppress_row_borders && isOption($edit_options, 'RS')) {
-                        echo " <tr class='RS'>";
+                        echo " <tr class='RS'" . $lbf_row_type_attr . ">";
                     } else if (!$lbf_suppress_row_borders && isOption($edit_options, 'RO')) {
-                        echo " <tr class='RO'>";
+                        echo " <tr class='RO'" . $lbf_row_type_attr . ">";
                     } else if (!empty($lbf_suppress_row_borders)) {
-                        echo " <tr style='" . $lbf_cell_border_style . "'>";
+                        echo " <tr style='" . $lbf_cell_border_style . "'" . $lbf_row_type_attr . ">";
                     } else {
-                        echo " <tr>";
+                        echo " <tr" . $lbf_row_type_attr . ">";
                     }
 
                     // Clear historical data string.
